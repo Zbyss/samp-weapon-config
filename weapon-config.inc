@@ -4063,9 +4063,7 @@ IPacket:WC_PLAYER_SYNC(playerid, BitStream:bs)
 		onFootData[PR_quaternion] = s_FakeQuat[playerid];
 	}
 
-	if (44 <= onFootData[PR_weaponId] <= 45) {
-		onFootData[PR_keys] &= ~KEY_FIRE;
-	} else if (onFootData[PR_weaponId] == WEAPON_KNIFE && !s_KnifeSync) {
+	if (onFootData[PR_weaponId] == WEAPON_KNIFE && !s_KnifeSync) {
 		onFootData[PR_keys] &= ~KEY_HANDBRAKE;
 	}
 
