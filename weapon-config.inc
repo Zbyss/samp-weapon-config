@@ -4158,7 +4158,7 @@ IPacket:WC_AIM_SYNC(playerid, BitStream:bs)
 
 static ScriptInit()
 {
-	s_LagCompMode = GetConsoleVarAsInt("lag_compensation");
+	s_LagCompMode = GetConsoleVarAsInt("game.lag_compensation_mode");
 
 	if (s_LagCompMode) {
 		SetKnifeSync(false);
