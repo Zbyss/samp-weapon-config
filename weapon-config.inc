@@ -74,7 +74,7 @@
 	#error streamer.inc is required when WC_USE_STREAMER=true
 #endif
 
-// https://github.com/katursis/Pawn.RakNet/blob/0.3.7/src/Pawn.RakNet.inc
+// https://github.com/katursis/Pawn.RakNet/blob/omp/src/Pawn.RakNet.inc
 #if !defined PAWNRAKNET_INC_
 	#tryinclude <Pawn.RakNet>
 
