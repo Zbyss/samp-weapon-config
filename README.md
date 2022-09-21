@@ -1,5 +1,7 @@
 # `weapon-config.inc`
 
+## This is the [open.mp](https://github.com/openmultiplayer/server-beta) version, click [here](https://github.com/oscar-broman/samp-weapon-config) for SA-MP version.
+
 This is an include that provides a more consistent and responsive damage system with many new features.
 
 It's pretty much plug-and-play if you don't have any filterscripts that interfere with the health or death events.
