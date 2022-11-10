@@ -3013,15 +3013,22 @@ public OnPlayerStateChange(playerid, newstate, oldstate)
 			GetPlayerVelocity(playerid, vx, vy, vz);
 
 			if (vx * vx + vy * vy + vz * vz <= 0.05) {
-				#if defined _Y_ITERATE_LOCAL_VERSION || defined _FOREACH_LOCAL_VERSION
+				#if defined _Y_ITERATE_LOCAL_VERSION && defined _FOREACH_STREAMED
+				foreach (new i : StreamedPlayer[playerid]) {
+				#elseif defined _Y_ITERATE_LOCAL_VERSION || defined _FOREACH_LOCAL_VERSION
 				foreach (new i : Player) {
 				#else
 				for (new i = 0; i != MAX_PLAYERS; i++) {
 				#endif
+					#if defined _Y_ITERATE_LOCAL_VERSION && defined _FOREACH_STREAMED
+					SendLastSyncPacket(playerid, i);
+					ClearAnimationsForPlayer(playerid, i);
+					#else
 					if (i != playerid && IsPlayerStreamedIn(playerid, i)) {
 						SendLastSyncPacket(playerid, i);
 						ClearAnimationsForPlayer(playerid, i);
 					}
+					#endif
 				}
 			}
 		}
@@ -4545,14 +4552,20 @@ static UpdateSyncData(playerid)
 		return;
 	}
 
-	#if defined _Y_ITERATE_LOCAL_VERSION || defined _FOREACH_LOCAL_VERSION
+	#if defined _Y_ITERATE_LOCAL_VERSION && defined _FOREACH_STREAMED
+	foreach (new i : StreamedPlayer[playerid]) {
+	#elseif defined _Y_ITERATE_LOCAL_VERSION || defined _FOREACH_LOCAL_VERSION
 	foreach (new i : Player) {
 	#else
 	for (new i = 0; i != MAX_PLAYERS; i++) {
 	#endif
+		#if defined _Y_ITERATE_LOCAL_VERSION && defined _FOREACH_STREAMED
+		SendLastSyncPacket(playerid, i);
+		#else
 		if (i != playerid && IsPlayerStreamedIn(playerid, i)) {
 			SendLastSyncPacket(playerid, i);
 		}
+		#endif
 	}
 }
 
@@ -4670,15 +4683,22 @@ public WC_SpawnForStreamedIn(playerid)
 	PR_SendRPC(bs, -1, WC_RPC_REQUEST_SPAWN);
 	BS_Delete(bs);
 
-	#if defined _Y_ITERATE_LOCAL_VERSION || defined _FOREACH_LOCAL_VERSION
+	#if defined _Y_ITERATE_LOCAL_VERSION && defined _FOREACH_STREAMED
+	foreach (new i : StreamedPlayer[playerid]) {
+	#elseif defined _Y_ITERATE_LOCAL_VERSION || defined _FOREACH_LOCAL_VERSION
 	foreach (new i : Player) {
 	#else
 	for (new i = 0; i != MAX_PLAYERS; i++) {
 	#endif
+		#if defined _Y_ITERATE_LOCAL_VERSION && defined _FOREACH_STREAMED
+		SendLastSyncPacket(playerid, i);
+		ClearAnimationsForPlayer(playerid, i);
+		#else
 		if (i != playerid && IsPlayerStreamedIn(playerid, i)) {
 			SendLastSyncPacket(playerid, i);
 			ClearAnimationsForPlayer(playerid, i);
 		}
+		#endif
 	}
 }
 
