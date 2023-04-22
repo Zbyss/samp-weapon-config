@@ -1930,9 +1930,9 @@ stock bool:WC_SetPlayerSpecialAction(playerid, SPECIAL_ACTION:actionid)
 	return SetPlayerSpecialAction(playerid, actionid);
 }
 
-stock Text:WC_TextDrawCreate(Float:x, Float:y, const text[])
+stock Text:WC_TextDrawCreate(Float:x, Float:y, const text[], OPEN_MP_TAGS:...)
 {
-	new Text:td = TextDrawCreate(x, y, text);
+	new Text:td = TextDrawCreate(x, y, text, ___(3));
 
 	if (td != Text:INVALID_TEXT_DRAW) {
 		s_InternalTextDraw[td] = false;
@@ -2043,10 +2043,10 @@ stock bool:WC_TextDrawHideForAll(Text:text)
 	return TextDrawHideForAll(text);
 }
 
-stock bool:WC_TextDrawSetString(Text:text, const string[])
+stock bool:WC_TextDrawSetString(Text:text, const string[], OPEN_MP_TAGS:...)
 {
 	if (_:text < 0 || text >= MAX_TEXT_DRAWS || s_InternalTextDraw[text]) return false;
-	return TextDrawSetString(text, string);
+	return bool:TextDrawSetString(text, string, ___(2));
 }
 
 stock bool:WC_TextDrawSetPreviewModel(Text:text, modelindex)
@@ -2067,10 +2067,10 @@ stock bool:WC_TextDrawSetPreviewVehicleColours(Text:text, colour1, colour2)
 	return TextDrawSetPreviewVehicleColours(text, colour1, colour2);
 }
 
-stock PlayerText:WC_CreatePlayerTextDraw(playerid, Float:x, Float:y, const text[])
+stock PlayerText:WC_CreatePlayerTextDraw(playerid, Float:x, Float:y, const text[], OPEN_MP_TAGS:...)
 {
 	if (playerid < 0 || playerid >= MAX_PLAYERS) return INVALID_PLAYER_TEXT_DRAW;
-	new PlayerText:td = CreatePlayerTextDraw(playerid, x, y, text);
+	new PlayerText:td = CreatePlayerTextDraw(playerid, x, y, text, ___(3));
 
 	if (td != INVALID_PLAYER_TEXT_DRAW) {
 		s_InternalPlayerTextDraw[playerid][td] = false;
@@ -2184,11 +2184,11 @@ stock bool:WC_PlayerTextDrawHide(playerid, PlayerText:text)
 	return PlayerTextDrawHide(playerid, text);
 }
 
-stock bool:WC_PlayerTextDrawSetString(playerid, PlayerText:text, const string[])
+stock bool:WC_PlayerTextDrawSetString(playerid, PlayerText:text, const string[], OPEN_MP_TAGS:...)
 {
 	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
 	if (_:text < 0 || text >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][text]) return false;
-	return PlayerTextDrawSetString(playerid, text, string);
+	return bool:PlayerTextDrawSetString(playerid, text, string, ___(3));
 }
 
 stock bool:WC_PlayerTextDrawSetPreviewModel(playerid, PlayerText:text, modelindex)
