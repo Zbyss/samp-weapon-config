@@ -402,10 +402,7 @@ forward OnRejectedHit(playerid, hit[E_REJECTED_HIT]);
 	const WC_PLAYER_SYNC = 207;
 	const WC_VEHICLE_SYNC = 200;
 	const WC_PASSENGER_SYNC = 211;
-
-	#if !defined _INC_open_mp
-		const WC_AIM_SYNC = 203;
-	#endif
+	const WC_AIM_SYNC = 203;
 
 	// Define RPC IDs
 	const WC_RPC_CLEAR_ANIMATIONS = 87;
@@ -1069,6 +1066,8 @@ static s_VehicleRespawnTimer[MAX_VEHICLES];
 	static s_LastSyncData[MAX_PLAYERS][PR_OnFootSync];
 	static s_DisableSyncBugs = true;
 	static s_KnifeSync = true;
+	static s_GogglesUsed[MAX_PLAYERS];
+	static s_GogglesTick[MAX_PLAYERS];
 #endif
 
 #if defined _INC_open_mp
@@ -1562,34 +1561,30 @@ stock GetRejectedHit(playerid, idx, output[], maxlength = sizeof(output))
 
 	WC_GetWeaponName(weapon, weapon_name);
 
-	#if defined _INC_open_mp
-		switch (reason) {
-			case SHOOTING_RATE_TOO_FAST,
-				 HIT_RATE_TOO_FAST: {
-				format(output, maxlength, g_HitRejectReasons[reason], i1, i2, i3);
-			}
-			case HIT_OUT_OF_RANGE,
-				 SHOOTING_RATE_TOO_FAST_MULTIPLE,
-				 HIT_RATE_TOO_FAST_MULTIPLE: {
-				format(output, maxlength, g_HitRejectReasons[reason], i1, i2);
-			}
-			case HIT_MULTIPLE_PLAYERS,
-				 HIT_MULTIPLE_PLAYERS_SHOTGUN,
-				 HIT_INVALID_HITTYPE,
-				 HIT_TOO_FAR_FROM_SHOT,
-				 HIT_TOO_FAR_FROM_ORIGIN,
-				 HIT_INVALID_DAMAGE,
-				 HIT_INVALID_VEHICLE,
-				 HIT_DISCONNECTED: {
-				format(output, maxlength, g_HitRejectReasons[reason], i1);
-			}
-			default: {
-				strcopy(output, g_HitRejectReasons[reason], maxlength);
-			}
+	switch (reason) {
+		case SHOOTING_RATE_TOO_FAST,
+			 HIT_RATE_TOO_FAST: {
+			format(output, maxlength, g_HitRejectReasons[reason], i1, i2, i3);
 		}
-	#else
-		format(output, maxlength, g_HitRejectReasons[reason], i1, i2, i3);
-	#endif
+		case HIT_OUT_OF_RANGE,
+			 SHOOTING_RATE_TOO_FAST_MULTIPLE,
+			 HIT_RATE_TOO_FAST_MULTIPLE: {
+			format(output, maxlength, g_HitRejectReasons[reason], i1, i2);
+		}
+		case HIT_MULTIPLE_PLAYERS,
+			 HIT_MULTIPLE_PLAYERS_SHOTGUN,
+			 HIT_INVALID_HITTYPE,
+			 HIT_TOO_FAR_FROM_SHOT,
+			 HIT_TOO_FAR_FROM_ORIGIN,
+			 HIT_INVALID_DAMAGE,
+			 HIT_INVALID_VEHICLE,
+			 HIT_DISCONNECTED: {
+			format(output, maxlength, g_HitRejectReasons[reason], i1);
+		}
+		default: {
+			format(output, maxlength, "%s", g_HitRejectReasons[reason]);
+		}
+	}
 
 	format(output, maxlength, "[%02d:%02d:%02d] (%s -> %s) %s", hour, minute, second, weapon_name, s_RejectedHits[playerid][real_idx][e_Name], output);
 
@@ -2443,7 +2438,7 @@ stock WC_PlayerTextDrawSetPreviewVehC(playerid, PlayerText:text, color1, color2)
 		return IsTextDrawVisibleForPlayer(playerid, textid);
 	}
 
-	stock bool:WC_TextDrawGetString(Text:textid, string[], stringSize = sizeof (string))
+	stock bool:WC_TextDrawGetString(Text:textid, string[], stringSize = sizeof(string))
 	{
 		if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return false;
 		return TextDrawGetString(textid, string, stringSize);
@@ -2591,7 +2586,7 @@ stock WC_PlayerTextDrawSetPreviewVehC(playerid, PlayerText:text, color1, color2)
 		return IsPlayerTextDrawVisible(playerid, textid);
 	}
 
-	stock bool:WC_PlayerTextDrawGetString(playerid, PlayerText:textid, string[], stringSize = sizeof (string))
+	stock bool:WC_PlayerTextDrawGetString(playerid, PlayerText:textid, string[], stringSize = sizeof(string))
 	{
 		if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
 		if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return false;
@@ -2889,6 +2884,7 @@ public OnPlayerConnect(playerid)
 		s_FakeQuat[playerid][2] = Float:0x7FFFFFFF;
 		s_FakeQuat[playerid][3] = Float:0x7FFFFFFF;
 		s_SyncDataFrozen[playerid] = false;
+		s_GogglesUsed[playerid] = 0;
 	#endif
 
 	#if defined _INC_open_mp
@@ -3377,7 +3373,7 @@ public OnPlayerDeath(playerid, killerid, WEAPON:reason)
 			}
 
 			s_DeathSkip[playerid] = 2;
-			
+
 			new WEAPON:w, a;
 			GetPlayerWeaponData(playerid, WEAPON_SLOT:0, w, a);
 
@@ -4012,9 +4008,20 @@ public OnPlayerGiveDamage(playerid, damagedid, Float:amount, WEAPON:weaponid, bo
 		}
 	}
 
-	if (IsBulletWeapon(weaponid) && _:amount != _:2.6400001049041748046875 && GetPlayerState(playerid) != PLAYER_STATE_DRIVER) {
-		new valid = true;
+	new valid = true;
 
+	if (GetPlayerState(playerid) == PLAYER_STATE_DRIVER) {
+		if (WEAPON_UZI <= weaponid <= WEAPON_MP5 || weaponid == WEAPON_TEC9) {
+			new KEY:keys, ud, lr;
+			GetPlayerKeys(playerid, keys, ud, lr);
+
+			// It is only possible to shoot if you look right or left from car
+			valid = (keys & KEY_LOOK_RIGHT) || (keys & KEY_LOOK_LEFT);
+		} else {
+			// Damage from something unusable from the driver's seat
+			valid = false;
+		}
+	} else if (IsBulletWeapon(weaponid) && _:amount != _:2.6400001049041748046875) {
 		if (!s_LastShot[playerid][e_Valid]) {
 			valid = false;
 			//AddRejectedHit(playerid, damagedid, HIT_LAST_SHOT_INVALID, weaponid);
@@ -4049,10 +4056,10 @@ public OnPlayerGiveDamage(playerid, damagedid, Float:amount, WEAPON:weaponid, bo
 		}
 
 		s_LastShot[playerid][e_Hits] += 1;
+	}
 
-		if (!valid) {
-			return 0;
-		}
+	if (!valid) {
+		return 0;
 	}
 
 	if (npc) {
@@ -4188,8 +4195,22 @@ public OnPlayerTakeDamage(playerid, issuerid, Float:amount, WEAPON:weaponid, bod
 
 	// If it's lagcomp, only allow damage that's valid for both modes
 	if (s_LagCompMode && s_ValidDamageTaken[weaponid] != 2) {
-		if (issuerid != INVALID_PLAYER_ID && GetPlayerState(issuerid) == PLAYER_STATE_DRIVER && (weaponid == WEAPON_M4 || weaponid == WEAPON_MINIGUN)) {
-			weaponid = weaponid == WEAPON_M4 ? WEAPON_VEHICLE_M4 : WEAPON_VEHICLE_MINIGUN;
+		if (issuerid != INVALID_PLAYER_ID
+		&& (weaponid == WEAPON_M4 || weaponid == WEAPON_MINIGUN)
+		&& GetPlayerState(issuerid) == PLAYER_STATE_DRIVER) {
+			new modelid = GetVehicleModel(GetPlayerVehicleID(issuerid));
+
+			if (weaponid == WEAPON_M4) {
+				if (modelid == 447 || modelid == 464 || modelid == 476) {
+					weaponid = WEAPON_VEHICLE_M4;
+				} else {
+					return 0;
+				}
+			} else if (weaponid == WEAPON_MINIGUN && modelid == 425) {
+				weaponid = WEAPON_VEHICLE_MINIGUN;
+			} else {
+				return 0;
+			}
 		} else {
 			return 0;
 		}
@@ -4443,6 +4464,11 @@ public OnPlayerWeaponShot(playerid, WEAPON:weaponid, BULLET_HIT_TYPE:hittype, hi
 			return 0;
 		}
 
+		if (!IsVehicleStreamedIn(hitid, playerid)) {
+			AddRejectedHit(playerid, damagedid, HIT_UNSTREAMED, weaponid, hitid);
+			return 0;
+		}
+
 		new vehicleid = GetPlayerVehicleID(playerid);
 
 		// Shouldn't be possible to damage the vehicle you're in
@@ -4666,12 +4692,10 @@ IPacket:WC_PLAYER_SYNC(playerid, BitStream:bs)
 	BS_IgnoreBits(bs, 8);
 	BS_ReadOnFootSync(bs, onFootData);
 
-	#if !defined _INC_open_mp
-		// Because of detonator crasher - Sends KEY_HANDBRAKE/KEY_AIM in this packet and cam mode IDs 7, 8, 34, 45, 46, 51 and 65 in WC_AIM_SYNC
-		if (onFootData[PR_weaponId] == WEAPON_BOMB) {
-			onFootData[PR_keys] &= ~KEY_HANDBRAKE;
-		}
-	#endif
+	// Because of detonator crasher - Sends KEY_HANDBRAKE/KEY_AIM in this packet and cam mode IDs 7, 8, 34, 45, 46, 51 and 65 in WC_AIM_SYNC
+	if (onFootData[PR_weaponId] == _:WEAPON_BOMB) {
+		onFootData[PR_keys] &= ~_:KEY_HANDBRAKE;
+	}
 
 	if (s_DisableSyncBugs) {
 		// Prevent "ghost shooting" bugs
@@ -4740,13 +4764,26 @@ IPacket:WC_PLAYER_SYNC(playerid, BitStream:bs)
 	}
 
 	if (onFootData[PR_weaponId] == _:WEAPON_KNIFE && !s_KnifeSync) {
+		// Remove aim key
 		onFootData[PR_keys] &= ~_:KEY_HANDBRAKE;
-	}
-	#if !defined _INC_open_mp
-		else if (44 <= onFootData[PR_weaponId] <= 45) {
-			onFootData[PR_keys] &= ~KEY_FIRE;
+	} else if (44 <= onFootData[PR_weaponId] <= 45) {
+		// Remove fire key
+		onFootData[PR_keys] &= ~_:KEY_FIRE;
+
+		// Keep preventing for some more packets
+		s_GogglesTick[playerid] = GetTickCount();
+		s_GogglesUsed[playerid] = 1;
+	} else if (s_GogglesUsed[playerid]) {
+		if (s_GogglesUsed[playerid] == 2 && GetTickCount() - s_GogglesTick[playerid] > 40) {
+			s_GogglesUsed[playerid] = 0;
+		} else {
+			// Remove fire key
+			onFootData[PR_keys] &= ~_:KEY_FIRE;
+
+			s_GogglesTick[playerid] = GetTickCount();
+			s_GogglesUsed[playerid] = 2;
 		}
-	#endif
+	}
 
 	BS_SetWriteOffset(bs, 8);
 	BS_WriteOnFootSync(bs, onFootData); // rewrite
@@ -4796,8 +4833,6 @@ IPacket:WC_PASSENGER_SYNC(playerid, BitStream:bs)
 	return 1;
 }
 
-#if !defined _INC_open_mp
-
 IPacket:WC_AIM_SYNC(playerid, BitStream:bs)
 {
 	new aimData[PR_AimSync];
@@ -4806,8 +4841,8 @@ IPacket:WC_AIM_SYNC(playerid, BitStream:bs)
 	BS_ReadAimSync(bs, aimData);
 
 	// Fix first-person up/down aim sync
-	if (WEAPON_SNIPER <= s_LastSyncData[playerid][PR_weaponId] <= WEAPON_HEATSEEKER
-	|| s_LastSyncData[playerid][PR_weaponId] == WEAPON_CAMERA) {
+	if (_:WEAPON_SNIPER <= s_LastSyncData[playerid][PR_weaponId] <= _:WEAPON_HEATSEEKER
+	|| s_LastSyncData[playerid][PR_weaponId] == _:WEAPON_CAMERA) {
 		aimData[PR_aimZ] = -aimData[PR_camFrontVec][2];
 
 		if (aimData[PR_aimZ] > 1.0) {
@@ -4823,13 +4858,9 @@ IPacket:WC_AIM_SYNC(playerid, BitStream:bs)
 	return 1;
 }
 
-#endif
+#if defined _INC_open_mp
 
-#endif
-
-#if defined _INC_open_mp && defined PAWNRAKNET_INC_
-
-// The alternative is to `SetPlayerAdmin` to `false` on death, but this doesn't seem like the "safest" solution.
+// The alternative is to `SetPlayerAdmin` to `false` on death, but this doesn't seem like the "safest" solution
 ORPC:WC_RPC_SET_PLAYER_POS_FIND_Z(playerid, BitStream:bs)
 {
 	if (s_BlockAdminTeleport[playerid]) {
@@ -4842,17 +4873,22 @@ ORPC:WC_RPC_SET_PLAYER_POS_FIND_Z(playerid, BitStream:bs)
 
 #endif
 
+#endif
+
 /*
  * Internal functions
  */
 
 static ScriptInit()
 {
-	#if defined _INC_open_mp
+	new version[16];
+	GetConsoleVarAsString("version", version, sizeof(version));
+
+	if (strfind(version, "open.mp") != -1) {
 		s_LagCompMode = GetConsoleVarAsInt("game.lag_compensation_mode");
-	#else
+	} else {
 		s_LagCompMode = GetConsoleVarAsInt("lagcompmode");
-	#endif
+	}
 
 	if (s_LagCompMode) {
 		SetKnifeSync(false);
@@ -5483,12 +5519,20 @@ static ProcessDamage(&playerid, &issuerid, &Float:amount, &WEAPON:weaponid, &bod
 		// Figure out what caused the explosion
 		if (issuerid != INVALID_PLAYER_ID) {
 			if (GetPlayerState(issuerid) == PLAYER_STATE_DRIVER) {
-				weaponid = WEAPON_VEHICLE_ROCKETLAUNCHER;
+				new modelid = GetVehicleModel(GetPlayerVehicleID(issuerid));
+
+				if (modelid == 425 || modelid == 432 || modelid == 520) {
+					weaponid = WEAPON_VEHICLE_ROCKETLAUNCHER;
+				}
 			} else if (s_LastExplosive[issuerid]) {
 				weaponid = s_LastExplosive[issuerid];
 			}
 		} else if (GetPlayerState(playerid) == PLAYER_STATE_DRIVER) {
-			weaponid = WEAPON_VEHICLE_ROCKETLAUNCHER;
+			new modelid = GetVehicleModel(GetPlayerVehicleID(playerid));
+
+			if (modelid == 425 || modelid == 432 || modelid == 520) {
+				weaponid = WEAPON_VEHICLE_ROCKETLAUNCHER;
+			}
 		}
 	}
 
