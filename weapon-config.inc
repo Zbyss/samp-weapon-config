@@ -90,6 +90,11 @@
 	#endif
 #endif
 
+// y_va is needed to pass format parameters to open.mp natives (textdraw hooks)
+#if !defined _INC_y_va
+	#tryinclude <YSI_Coding\y_va>
+#endif
+
 // Pre-hooks for hooking callbacks
 #if !defined CHAIN_ORDER
 	#define CHAIN_ORDER() 0
@@ -131,25 +136,25 @@ enum {
 
 // Hits displayed in the damage feeds
 enum E_DAMAGE_FEED_HIT {
-	       e_Issuer,
-	       e_Name[MAX_PLAYER_NAME],
+		   e_Issuer,
+		   e_Name[MAX_PLAYER_NAME],
 	 Float:e_Amount,
 	WEAPON:e_Weapon,
-	       e_Tick
+		   e_Tick
 }
 
 // Given in OnRejectedHit
 enum E_REJECTED_HIT {
-	       e_Time,
-	       e_Hour,
-	       e_Minute,
-	       e_Second,
+		   e_Time,
+		   e_Hour,
+		   e_Minute,
+		   e_Second,
 	WEAPON:e_Weapon,
-	       e_Reason,
-	       e_Info1,
-	       e_Info2,
-	       e_Info3,
-	       e_Name[MAX_PLAYER_NAME]
+		   e_Reason,
+		   e_Info1,
+		   e_Info2,
+		   e_Info3,
+		   e_Name[MAX_PLAYER_NAME]
 }
 
 // e_Reason in E_REJECTED_HIT
@@ -227,68 +232,68 @@ stock const g_HitRejectReasons[][] = {
 enum E_RESYNC_DATA {
 	 Float:e_Health,
 	 Float:e_Armour,
-	       e_Skin,
-	       e_Team,
+		   e_Skin,
+		   e_Team,
 	 Float:e_PosX,
 	 Float:e_PosY,
 	 Float:e_PosZ,
 	 Float:e_PosA,
 	WEAPON:e_Weapon,
 	WEAPON:e_WeaponId[MAX_WEAPON_SLOTS],
-	       e_WeaponAmmo[MAX_WEAPON_SLOTS]
+		   e_WeaponAmmo[MAX_WEAPON_SLOTS]
 }
 
 // From OnPlayerWeaponShot
 enum E_SHOT_INFO {
-	      e_Tick,
-	      e_Weapon,
-	      e_HitType,
-	      e_HitId,
-	      e_Hits,
-	Float:e_X,
-	Float:e_Y,
-	Float:e_Z,
-	Float:e_OX,
-	Float:e_OY,
-	Float:e_OZ,
-	Float:e_HX,
-	Float:e_HY,
-	Float:e_HZ,
-	Float:e_Length,
-	 bool:e_Valid
+	       e_Tick,
+	WEAPON:e_Weapon,
+	       e_HitType,
+	       e_HitId,
+	       e_Hits,
+	 Float:e_X,
+	 Float:e_Y,
+	 Float:e_Z,
+	 Float:e_OX,
+	 Float:e_OY,
+	 Float:e_OZ,
+	 Float:e_HX,
+	 Float:e_HY,
+	 Float:e_HZ,
+	 Float:e_Length,
+	  bool:e_Valid
 }
 
 enum E_HIT_INFO {
-	      e_Tick,
-	      e_Issuer,
-	      e_Weapon,
-	Float:e_Amount,
-	Float:e_Health,
-	Float:e_Armour,
-	      e_Bodypart
+	       e_Tick,
+	       e_Issuer,
+	WEAPON:e_Weapon,
+	 Float:e_Amount,
+	 Float:e_Health,
+	 Float:e_Armour,
+	       e_Bodypart
 }
 
 enum E_SPAWN_INFO {
-	       e_Skin,
-	       e_Team,
+		   e_Skin,
+		   e_Team,
 	 Float:e_PosX,
 	 Float:e_PosY,
 	 Float:e_PosZ,
 	 Float:e_Rot,
 	WEAPON:e_Weapon1,
-	       e_Ammo1,
+		   e_Ammo1,
 	WEAPON:e_Weapon2,
-	       e_Ammo2,
+		   e_Ammo2,
 	WEAPON:e_Weapon3,
-	       e_Ammo3
+		   e_Ammo3
 }
 
 // When a player takes or gives invalid damage (WC_* errors above)
-forward OnInvalidWeaponDamage(playerid, damagedid, Float:amount, weaponid, bodypart, error, bool:given);
+forward OnInvalidWeaponDamage(playerid, damagedid, Float:amount, WEAPON:weaponid, bodypart, error, bool:given);
 // Before damage is inflicted
-forward OnPlayerDamage(&playerid, &Float:amount, &issuerid, &weapon, &bodypart);
+forward OnPlayerDamage(&playerid, &Float:amount, &issuerid, &WEAPON:weapon, &bodypart);
 // After OnPlayerDamage
-forward OnPlayerDamageDone(playerid, Float:amount, issuerid, weapon, bodypart);
+forward OnPlayerDamageDone(playerid, Float:amount, issuerid, WEAPON:weapon, bodypart);
 // Before the death animation is applied
 forward OnPlayerPrepareDeath(playerid, animlib[32], animname[32], &anim_lock, &respawn_time);
 // When the death animation is finished and the player has been sent to respawn
@@ -322,6 +327,7 @@ const WC_AIM_SYNC = 203;
 // Define RPC IDs
 const WC_RPC_CLEAR_ANIMATIONS = 87;
 const WC_RPC_REQUEST_SPAWN = 129;
+const WC_RPC_SET_PLAYER_POS_FIND_Z = 13;
 
 #if WC_DEBUG_SILENT
 	static s_DebugMsgBuf[512];
@@ -333,10 +339,10 @@ const WC_RPC_REQUEST_SPAWN = 129;
 		format(s_DebugMsgBuf,512,%2),printf("(wc:%d) WARN: %s",%1,s_DebugMsgBuf)
 
 	#define DebugMessageAll(%1) \
-		printf(s_DebugMsgBuf,"(wc) " %1)
+		printf("(wc) " %1)
 
 	#define DebugMessageRedAll(%1) \
-		printf(s_DebugMsgBuf,"(wc) WARN: " %1)
+		printf("(wc) WARN: " %1)
 #elseif WC_DEBUG
 	static s_DebugMsgBuf[512];
 
@@ -350,11 +356,11 @@ const WC_RPC_REQUEST_SPAWN = 129;
 
 	#define DebugMessageAll(%1) \
 		format(s_DebugMsgBuf,512,"(wc) " %1),SendClientMessageToAll(-1,s_DebugMsgBuf), \
-		printf(s_DebugMsgBuf,"(wc) " %1)
+		printf("(wc) " %1)
 
 	#define DebugMessageRedAll(%1) \
 		format(s_DebugMsgBuf,512,"(wc) " %1),SendClientMessageToAll(0xcc0000ff,s_DebugMsgBuf), \
-		printf(s_DebugMsgBuf,"(wc) WARN: " %1)
+		printf("(wc) WARN: " %1)
 #else
 	#define DebugMessage(%1);
 	#define DebugMessageRed(%1);
@@ -600,22 +606,22 @@ static s_DamageType[] = {
 // Note that due to various bugs, these can be exceeded, but
 // this include blocks out-of-range values.
 static Float:s_WeaponRange[] = {
-	1.6, // 0 - Fist
-	1.6, // 1 - Brass knuckles
-	1.6, // 2 - Golf club
-	1.6, // 3 - Nitestick
-	1.6, // 4 - Knife
-	1.6, // 5 - Bat
+	1.76, // 0 - Fist
+	1.76, // 1 - Brass knuckles
+	1.76, // 2 - Golf club
+	1.76, // 3 - Nitestick
+	1.76, // 4 - Knife
+	1.76, // 5 - Bat
 	1.6, // 6 - Shovel
-	1.6, // 7 - Pool cue
-	1.6, // 8 - Katana
-	1.6, // 9 - Chainsaw
-	1.6, // 10 - Dildo
-	1.6, // 11 - Dildo 2
-	1.6, // 12 - Vibrator
-	1.6, // 13 - Vibrator 2
-	1.6, // 14 - Flowers
-	1.6, // 15 - Cane
+	1.76, // 7 - Pool cue
+	1.76, // 8 - Katana
+	1.76, // 9 - Chainsaw
+	1.76, // 10 - Dildo
+	1.76, // 11 - Dildo 2
+	1.76, // 12 - Vibrator
+	1.76, // 13 - Vibrator 2
+	1.76, // 14 - Flowers
+	1.76, // 15 - Cane
 	40.0, // 16 - Grenade
 	40.0, // 17 - Teargas
 	40.0, // 18 - Molotov
@@ -646,7 +652,7 @@ static Float:s_WeaponRange[] = {
 	100.0, // 43 - Camera
 	100.0, // 44 - Night vision
 	100.0, // 45 - Infrared
-	1.6  // 46 - Parachute
+	1.76  // 46 - Parachute
 };
 
 // The fastest possible gap between weapon shots in milliseconds
@@ -888,7 +894,7 @@ static s_LastSentArmour[MAX_PLAYERS];
 static bool:s_DamageArmourToggle[2] = {false, ...};
 static s_PlayerTeam[MAX_PLAYERS] = {NO_TEAM, ...};
 static s_IsDying[MAX_PLAYERS];
-static s_DeathTimer[MAX_PLAYERS] = {-1, ...};
+static s_DeathTimer[MAX_PLAYERS];
 static bool:s_HealthBarVisible[MAX_PLAYERS];
 static bool:s_SpawnForStreamedIn[MAX_PLAYERS];
 static s_RespawnTime = 3000;
@@ -916,7 +922,7 @@ static PlayerText:s_DamageFeedTaken[MAX_PLAYERS] = {INVALID_PLAYER_TEXT_DRAW, ..
 static PlayerText:s_DamageFeedGiven[MAX_PLAYERS] = {INVALID_PLAYER_TEXT_DRAW, ...};
 static s_DamageFeedHitsGiven[MAX_PLAYERS][WC_FEED_HEIGHT][E_DAMAGE_FEED_HIT];
 static s_DamageFeedHitsTaken[MAX_PLAYERS][WC_FEED_HEIGHT][E_DAMAGE_FEED_HIT];
-static s_DamageFeedTimer[MAX_PLAYERS] = {-1, ...};
+static s_DamageFeedTimer[MAX_PLAYERS];
 static s_DamageFeedLastUpdate[MAX_PLAYERS];
 static s_Spectating[MAX_PLAYERS] = {INVALID_PLAYER_ID, ...};
 static s_LastStop[MAX_PLAYERS];
@@ -925,15 +931,15 @@ static bool:s_FirstSpawn[MAX_PLAYERS] = {true, ...};
 #if WC_CUSTOM_VENDING_MACHINES
 	static bool:s_CustomVendingMachines = true;
 	#if WC_USE_STREAMER
-		static s_VendingMachineObject[sizeof(sc_VendingMachines)] = {INVALID_STREAMER_ID, ...};
+		static STREAMER_TAG_OBJECT:s_VendingMachineObject[sizeof(sc_VendingMachines)] = {STREAMER_TAG_OBJECT:INVALID_STREAMER_ID, ...};
 	#else
-		static s_VendingMachineObject[sizeof(sc_VendingMachines)] = {-1, ...};
+		static s_VendingMachineObject[sizeof(sc_VendingMachines)] = {INVALID_OBJECT_ID, ...};
 	#endif
-	static s_VendingUseTimer[MAX_PLAYERS] = {-1, ...};
+	static s_VendingUseTimer[MAX_PLAYERS];
 #endif
 
 static s_BeingResynced[MAX_PLAYERS];
-static s_KnifeTimeout[MAX_PLAYERS] = {-1, ...};
+static s_KnifeTimeout[MAX_PLAYERS];
 static s_SyncData[MAX_PLAYERS][E_RESYNC_DATA];
 static Text:s_HealthBarBorder = Text:INVALID_TEXT_DRAW;
 static Text:s_HealthBarBackground = Text:INVALID_TEXT_DRAW;
@@ -962,10 +968,10 @@ static s_PreviousHits[MAX_PLAYERS][10][E_HIT_INFO];
 static s_PreviousHitI[MAX_PLAYERS];
 static Float:s_DamageDoneHealth[MAX_PLAYERS];
 static Float:s_DamageDoneArmour[MAX_PLAYERS];
-static s_DelayedDeathTimer[MAX_PLAYERS] = {-1, ...};
+static s_DelayedDeathTimer[MAX_PLAYERS];
 static bool:s_VehicleAlive[MAX_VEHICLES] = {false, ...};
 static bool:s_EnableHealthBar[MAX_PLAYERS];
-static s_VehicleRespawnTimer[MAX_VEHICLES] = {-1, ...};
+static s_VehicleRespawnTimer[MAX_VEHICLES];
 static s_FakeHealth[MAX_PLAYERS char];
 static s_FakeArmour[MAX_PLAYERS char];
 static Float:s_FakeQuat[MAX_PLAYERS][4];
@@ -973,6 +979,10 @@ static bool:s_SyncDataFrozen[MAX_PLAYERS];
 static s_LastSyncData[MAX_PLAYERS][PR_OnFootSync];
 static s_DisableSyncBugs = true;
 static s_KnifeSync = true;
+static s_GogglesUsed[MAX_PLAYERS];
+static s_GogglesTick[MAX_PLAYERS];
+static bool:s_RestorePlayerTeleport[MAX_PLAYERS];
+static bool:s_BlockAdminTeleport[MAX_PLAYERS];
 
 /*
  * Public API
@@ -1222,7 +1232,8 @@ stock SetCustomFallDamage(bool:toggle, Float:damage_multiplier = 25.0, Float:dea
 	s_CustomFallDamage = toggle;
 
 	if (toggle) {
-		s_WeaponDamage[54] = damage_multiplier; // Using WEAPON_COLLISION here throws a tag mismatch.
+		// WEAPON_COLLISION instead of magic number causes tag mismatch with omp-stdlib
+		s_WeaponDamage[54] = damage_multiplier;
 		s_FallDeathVelocity = -floatabs(death_velocity);
 	}
 }
@@ -1436,9 +1447,32 @@ stock GetRejectedHit(playerid, idx, output[], maxlength = sizeof(output))
 
 	WC_GetWeaponName(weapon, weapon_name);
 
-	format(output, maxlength, "[%02d:%02d:%02d] (%s -> %s) %s", hour, minute, second, weapon_name, s_RejectedHits[playerid][real_idx][e_Name], g_HitRejectReasons[reason]);
+	switch (reason) {
+		case SHOOTING_RATE_TOO_FAST,
+			 HIT_RATE_TOO_FAST: {
+			format(output, maxlength, g_HitRejectReasons[reason], i1, i2, i3);
+		}
+		case HIT_OUT_OF_RANGE,
+			 SHOOTING_RATE_TOO_FAST_MULTIPLE,
+			 HIT_RATE_TOO_FAST_MULTIPLE: {
+			format(output, maxlength, g_HitRejectReasons[reason], i1, i2);
+		}
+		case HIT_MULTIPLE_PLAYERS,
+			 HIT_MULTIPLE_PLAYERS_SHOTGUN,
+			 HIT_INVALID_HITTYPE,
+			 HIT_TOO_FAR_FROM_SHOT,
+			 HIT_TOO_FAR_FROM_ORIGIN,
+			 HIT_INVALID_DAMAGE,
+			 HIT_INVALID_VEHICLE,
+			 HIT_DISCONNECTED: {
+			format(output, maxlength, g_HitRejectReasons[reason], i1);
+		}
+		default: {
+			format(output, maxlength, "%s", g_HitRejectReasons[reason]);
+		}
+	}
 
-	format(output, maxlength, output, i1, i2, i3);
+	format(output, maxlength, "[%02d:%02d:%02d] (%s -> %s) %s", hour, minute, second, weapon_name, s_RejectedHits[playerid][real_idx][e_Name], output);
 
 	return 1;
 }
@@ -1746,19 +1780,24 @@ stock bool:WC_TogglePlayerSpectating(playerid, bool:toggle)
 {
 	if (TogglePlayerSpectating(playerid, toggle)) {
 		if (toggle) {
-			if (s_DeathTimer[playerid] != -1) {
+			if (s_DeathTimer[playerid]) {
 				KillTimer(s_DeathTimer[playerid]);
-				s_DeathTimer[playerid] = -1;
+				s_DeathTimer[playerid] = 0;
 			}
 
 			#if WC_CUSTOM_VENDING_MACHINES
-				if (s_VendingUseTimer[playerid] != -1) {
+				if (s_VendingUseTimer[playerid]) {
 					KillTimer(s_VendingUseTimer[playerid]);
-					s_VendingUseTimer[playerid] = -1;
+					s_VendingUseTimer[playerid] = 0;
 				}
 			#endif
 
 			s_IsDying[playerid] = false;
+
+			if (s_RestorePlayerTeleport[playerid]) {
+				s_RestorePlayerTeleport[playerid] = false;
+				AllowPlayerTeleport(playerid, true);
+			}
 		}
 
 		return true;
@@ -1859,9 +1898,9 @@ stock bool:WC_DestroyVehicle(vehicleid)
 		s_LastVehicleShooter[vehicleid] = INVALID_PLAYER_ID;
 		s_VehicleAlive[vehicleid] = false;
 
-		if (s_VehicleRespawnTimer[vehicleid] != -1) {
+		if (s_VehicleRespawnTimer[vehicleid]) {
 			KillTimer(s_VehicleRespawnTimer[vehicleid]);
-			s_VehicleRespawnTimer[vehicleid] = -1;
+			s_VehicleRespawnTimer[vehicleid] = 0;
 		}
 
 		return true;
@@ -1930,9 +1969,17 @@ stock bool:WC_SetPlayerSpecialAction(playerid, SPECIAL_ACTION:actionid)
 	return SetPlayerSpecialAction(playerid, actionid);
 }
 
+#if defined _INC_y_va
+stock Text:WC_TextDrawCreate(Float:x, Float:y, const text[], OPEN_MP_TAGS:...)
+#else
 stock Text:WC_TextDrawCreate(Float:x, Float:y, const text[])
+#endif
 {
-	new Text:td = TextDrawCreate(x, y, text);
+	#if defined _INC_y_va
+		new Text:td = TextDrawCreate(x, y, text, ___(3));
+	#else
+		new Text:td = TextDrawCreate(x, y, text);
+	#endif
 
 	if (td != Text:INVALID_TEXT_DRAW) {
 		s_InternalTextDraw[td] = false;
@@ -2043,10 +2090,18 @@ stock bool:WC_TextDrawHideForAll(Text:text)
 	return TextDrawHideForAll(text);
 }
 
+#if defined _INC_y_va
+stock bool:WC_TextDrawSetString(Text:text, const string[], OPEN_MP_TAGS:...)
+#else
 stock bool:WC_TextDrawSetString(Text:text, const string[])
+#endif
 {
 	if (_:text < 0 || text >= MAX_TEXT_DRAWS || s_InternalTextDraw[text]) return false;
-	return TextDrawSetString(text, string);
+	#if defined _INC_y_va
+		return TextDrawSetString(text, string, ___(2));
+	#else
+		return TextDrawSetString(text, string);
+	#endif
 }
 
 stock bool:WC_TextDrawSetPreviewModel(Text:text, modelindex)
@@ -2061,16 +2116,24 @@ stock bool:WC_TextDrawSetPreviewRot(Text:text, Float:fRotX, Float:fRotY, Float:f
 	return TextDrawSetPreviewRot(text, fRotX, fRotY, fRotZ, fZoom);
 }
 
-stock bool:WC_TextDrawSetPreviewVehicleColours(Text:text, colour1, colour2)
+stock bool:WC_TextDrawSetPreviewVehCol(Text:text, colour1, colour2)
 {
 	if (_:text < 0 || text >= MAX_TEXT_DRAWS || s_InternalTextDraw[text]) return false;
 	return TextDrawSetPreviewVehicleColours(text, colour1, colour2);
 }
 
+#if defined _INC_y_va
+stock PlayerText:WC_CreatePlayerTextDraw(playerid, Float:x, Float:y, const text[], OPEN_MP_TAGS:...)
+#else
 stock PlayerText:WC_CreatePlayerTextDraw(playerid, Float:x, Float:y, const text[])
+#endif
 {
 	if (playerid < 0 || playerid >= MAX_PLAYERS) return INVALID_PLAYER_TEXT_DRAW;
-	new PlayerText:td = CreatePlayerTextDraw(playerid, x, y, text);
+	#if defined _INC_y_va
+		new PlayerText:td = CreatePlayerTextDraw(playerid, x, y, text, ___(4));
+	#else
+		new PlayerText:td = CreatePlayerTextDraw(playerid, x, y, text);
+	#endif
 
 	if (td != INVALID_PLAYER_TEXT_DRAW) {
 		s_InternalPlayerTextDraw[playerid][td] = false;
@@ -2142,7 +2205,7 @@ stock bool:WC_PlayerTextDrawSetOutline(playerid, PlayerText:text, size)
 	return PlayerTextDrawSetOutline(playerid, text, size);
 }
 
-stock bool:WC_PlayerTextDrawBackgroundColour(playerid, PlayerText:text, colour)
+stock bool:WC_PlayerTextDrawBackgroundColo(playerid, PlayerText:text, colour)
 {
 	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
 	if (_:text < 0 || text >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][text]) return false;
@@ -2156,7 +2219,7 @@ stock bool:WC_PlayerTextDrawFont(playerid, PlayerText:text, TEXT_DRAW_FONT:font)
 	return PlayerTextDrawFont(playerid, text, font);
 }
 
-stock bool:WC_PlayerTextDrawSetProportional(playerid, PlayerText:text, bool:set)
+stock bool:WC_PlayerTextDrawSetProportiona(playerid, PlayerText:text, bool:set)
 {
 	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
 	if (_:text < 0 || text >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][text]) return false;
@@ -2184,14 +2247,22 @@ stock bool:WC_PlayerTextDrawHide(playerid, PlayerText:text)
 	return PlayerTextDrawHide(playerid, text);
 }
 
+#if defined _INC_y_va
+stock bool:WC_PlayerTextDrawSetString(playerid, PlayerText:text, const string[], OPEN_MP_TAGS:...)
+#else
 stock bool:WC_PlayerTextDrawSetString(playerid, PlayerText:text, const string[])
+#endif
 {
 	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
 	if (_:text < 0 || text >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][text]) return false;
-	return PlayerTextDrawSetString(playerid, text, string);
+	#if defined _INC_y_va
+		return PlayerTextDrawSetString(playerid, text, string, ___(3));
+	#else
+		return PlayerTextDrawSetString(playerid, text, string);
+	#endif
 }
 
-stock bool:WC_PlayerTextDrawSetPreviewModel(playerid, PlayerText:text, modelindex)
+stock bool:WC_PlayerTextDrawSetPreviewMode(playerid, PlayerText:text, modelindex)
 {
 	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
 	if (_:text < 0 || text >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][text]) return false;
@@ -2205,11 +2276,329 @@ stock bool:WC_PlayerTextDrawSetPreviewRot(playerid, PlayerText:text, Float:fRotX
 	return PlayerTextDrawSetPreviewRot(playerid, text, fRotX, fRotY, fRotZ, fZoom);
 }
 
-stock bool:WC_PlayerTextDrawSetPreviewVehicleColours(playerid, PlayerText:text, colour1, colour2)
+stock bool:WC_PlayerTextDrawSetPreviewVehC(playerid, PlayerText:text, colour1, colour2)
 {
 	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
 	if (_:text < 0 || text >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][text]) return false;
 	return PlayerTextDrawSetPreviewVehicleColours(playerid, text, colour1, colour2);
+}
+
+stock WC_AllowPlayerTeleport(playerid, bool:allow)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) {
+		return 0;
+	}
+	if (s_IsDying[playerid]) {
+		s_RestorePlayerTeleport[playerid] = allow;
+		return 1;
+	}
+
+	return AllowPlayerTeleport(playerid, allow);
+}
+
+stock bool:WC_IsPlayerTeleportAllowed(playerid)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
+	if (s_RestorePlayerTeleport[playerid]) return true;
+	return IsPlayerTeleportAllowed(playerid);
+}
+
+stock bool:WC_IsValidTextDraw(Text:textid)
+{
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return false;
+	return IsValidTextDraw(textid);
+}
+
+stock bool:WC_IsTextDrawVisibleForPlayer(playerid, Text:textid)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return false;
+	return IsTextDrawVisibleForPlayer(playerid, textid);
+}
+
+stock bool:WC_TextDrawGetString(Text:textid, string[], stringSize = sizeof(string))
+{
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return false;
+	return TextDrawGetString(textid, string, stringSize);
+}
+
+stock bool:WC_TextDrawSetPos(Text:textid, Float:x, Float:y)
+{
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return false;
+	return TextDrawSetPos(textid, x, y);
+}
+
+stock bool:WC_TextDrawGetLetterSize(Text:textid, &Float:width, &Float:height)
+{
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return false;
+	return TextDrawGetLetterSize(textid, width, height);
+}
+
+stock bool:WC_TextDrawGetTextSize(Text:textid, &Float:width, &Float:height)
+{
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return false;
+	return TextDrawGetTextSize(textid, width, height);
+}
+
+stock bool:WC_TextDrawGetPos(Text:textid, &Float:x, &Float:y)
+{
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return false;
+	return TextDrawGetPos(textid, x, y);
+}
+
+stock WC_TextDrawGetColour(Text:textid)
+{
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return 0;
+	return TextDrawGetColour(textid);
+}
+
+stock WC_TextDrawGetBoxColour(Text:textid)
+{
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return 0;
+	return TextDrawGetBoxColour(textid);
+}
+
+stock WC_TextDrawGetBackgroundColour(Text:textid)
+{
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return 0;
+	return TextDrawGetBackgroundColour(textid);
+}
+
+stock WC_TextDrawGetShadow(Text:textid)
+{
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return 0;
+	return TextDrawGetShadow(textid);
+}
+
+stock WC_TextDrawGetOutline(Text:textid)
+{
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return 0;
+	return TextDrawGetOutline(textid);
+}
+
+stock TEXT_DRAW_FONT:WC_TextDrawGetFont(Text:textid)
+{
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return UNKNOWN_TEXT_DRAW_FONT;
+	return TextDrawGetFont(textid);
+}
+
+stock bool:WC_TextDrawIsBox(Text:textid)
+{
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return false;
+	return TextDrawIsBox(textid);
+}
+
+stock bool:WC_TextDrawIsProportional(Text:textid)
+{
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return false;
+	return TextDrawIsProportional(textid);
+}
+
+stock bool:WC_TextDrawIsSelectable(Text:textid)
+{
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return false;
+	return TextDrawIsSelectable(textid);
+}
+
+stock TEXT_DRAW_ALIGN:WC_TextDrawGetAlignment(Text:textid)
+{
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return UNKNOWN_TEXT_DRAW_ALIGN;
+	return TextDrawGetAlignment(textid);
+}
+
+stock WC_TextDrawGetPreviewModel(Text:textid)
+{
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return 0;
+	return TextDrawGetPreviewModel(textid);
+}
+
+stock bool:WC_TextDrawGetPreviewRot(Text:textid, &Float:rotationX, &Float:rotationY, &Float:rotationZ, &Float:zoom)
+{
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return false;
+	return TextDrawGetPreviewRot(textid, rotationX, rotationY, rotationZ, zoom);
+}
+
+stock bool:WC_TextDrawGetPreviewVehicleColours(Text:textid, &colour1, &colour2)
+{
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return false;
+	return TextDrawGetPreviewVehicleColours(textid, colour1, colour2);
+}
+
+#if defined _INC_y_va
+stock bool:WC_TextDrawSetStringForPlayer(Text:textid, playerid, const format[], OPEN_MP_TAGS:...)
+#else
+stock bool:WC_TextDrawSetStringForPlayer(Text:textid, playerid, const format[])
+#endif
+{
+	if (_:textid < 0 || textid >= Text:MAX_TEXT_DRAWS || s_InternalTextDraw[textid]) return false;
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
+	#if defined _INC_y_va
+		return TextDrawSetStringForPlayer(textid, playerid, format, ___(3));
+	#else
+		return TextDrawSetStringForPlayer(textid, playerid, format);
+	#endif
+}
+
+stock bool:WC_IsValidPlayerTextDraw(playerid, PlayerText:textid)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
+	if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return false;
+	return IsValidPlayerTextDraw(playerid, textid);
+}
+
+stock bool:WC_IsPlayerTextDrawVisible(playerid, PlayerText:textid)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
+	if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return false;
+	return IsPlayerTextDrawVisible(playerid, textid);
+}
+
+stock bool:WC_PlayerTextDrawGetString(playerid, PlayerText:textid, string[], stringSize = sizeof(string))
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
+	if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return false;
+	return PlayerTextDrawGetString(playerid, textid, string, stringSize);
+}
+
+stock bool:WC_PlayerTextDrawSetPos(playerid, PlayerText:textid, Float:x, Float:y)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
+	if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return false;
+	return PlayerTextDrawSetPos(playerid, textid, x, y);
+}
+
+stock bool:WC_PlayerTextDrawGetLetterSize(playerid, PlayerText:textid, &Float:width, &Float:height)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
+	if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return false;
+	return PlayerTextDrawGetLetterSize(playerid, textid, width, height);
+}
+
+stock bool:WC_PlayerTextDrawGetTextSize(playerid, PlayerText:textid, &Float:width, &Float:height)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
+	if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return false;
+	return PlayerTextDrawGetTextSize(playerid, textid, width, height);
+}
+
+stock bool:WC_PlayerTextDrawGetPos(playerid, PlayerText:textid, &Float:x, &Float:y)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
+	if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return false;
+	return PlayerTextDrawGetPos(playerid, textid, x, y);
+}
+
+stock WC_PlayerTextDrawGetColour(playerid, PlayerText:textid)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return 0;
+	if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return 0;
+	return PlayerTextDrawGetColour(playerid, textid);
+}
+
+stock WC_PlayerTextDrawGetBoxColour(playerid, PlayerText:textid)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return 0;
+	if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return 0;
+	return PlayerTextDrawGetBoxColour(playerid, textid);
+}
+
+stock WC_PlayerTextDrawGetBackgroundColour(playerid, PlayerText:textid)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return 0;
+	if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return 0;
+	return PlayerTextDrawGetBackgroundColour(playerid, textid);
+}
+
+stock WC_PlayerTextDrawGetShadow(playerid, PlayerText:textid)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return 0;
+	if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return 0;
+	return PlayerTextDrawGetShadow(playerid, textid);
+}
+
+stock WC_PlayerTextDrawGetOutline(playerid, PlayerText:textid)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return 0;
+	if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return 0;
+	return PlayerTextDrawGetOutline(playerid, textid);
+}
+
+stock TEXT_DRAW_FONT:WC_PlayerTextDrawGetFont(playerid, PlayerText:textid)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return UNKNOWN_TEXT_DRAW_FONT;
+	if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return UNKNOWN_TEXT_DRAW_FONT;
+	return PlayerTextDrawGetFont(playerid, textid);
+}
+
+stock bool:WC_PlayerTextDrawIsBox(playerid, PlayerText:textid)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
+	if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return false;
+	return PlayerTextDrawIsBox(playerid, textid);
+}
+
+stock bool:WC_PlayerTextDrawIsProportional(playerid, PlayerText:textid)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
+	if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return false;
+	return PlayerTextDrawIsProportional(playerid, textid);
+}
+
+stock bool:WC_PlayerTextDrawIsSelectable(playerid, PlayerText:textid)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
+	if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return false;
+	return PlayerTextDrawIsSelectable(playerid, textid);
+}
+
+stock TEXT_DRAW_ALIGN:WC_PlayerTextDrawGetAlignment(playerid, PlayerText:textid)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return UNKNOWN_TEXT_DRAW_ALIGN;
+	if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return UNKNOWN_TEXT_DRAW_ALIGN;
+	return PlayerTextDrawGetAlignment(playerid, textid);
+}
+
+stock WC_PlayerTextDrawGetPreviewMode(playerid, PlayerText:textid)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return 0;
+	if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return 0;
+	return PlayerTextDrawGetPreviewModel(playerid, textid);
+}
+
+stock bool:WC_PlayerTextDrawGetPreviewRot(playerid, PlayerText:textid, &Float:rotationX, &Float:rotationY, &Float:rotationZ, &Float:zoom)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
+	if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return false;
+	return PlayerTextDrawGetPreviewRot(playerid, textid, rotationX, rotationY, rotationZ, zoom);
+}
+
+stock bool:WC_PlayerTextDrawGetPreviewVehicleColours(playerid, PlayerText:textid, &colour1, &colour2)
+{
+	if (playerid < 0 || playerid >= MAX_PLAYERS) return false;
+	if (_:textid < 0 || textid >= MAX_PLAYER_TEXT_DRAWS || s_InternalPlayerTextDraw[playerid][textid]) return false;
+	return PlayerTextDrawGetPreviewVehicleColours(playerid, textid, colour1, colour2);
+}
+
+stock WC_EditPlayerClass(classid, team, skin, Float:spawnX, Float:spawnY, Float:spawnZ, Float:angle, WEAPON:weapon1 = WEAPON_FIST, ammo1 = 0, WEAPON:weapon2 = WEAPON_FIST, ammo2 = 0, WEAPON:weapon3 = WEAPON_FIST, ammo3 = 0)
+{
+	if (EditPlayerClass(classid, team, skin, spawnX, spawnY, spawnZ, angle, weapon1, ammo1, weapon2, ammo2, weapon3, ammo3)) {
+		s_ClassSpawnInfo[classid][e_Skin] = modelid;
+		s_ClassSpawnInfo[classid][e_Team] = teamid;
+		s_ClassSpawnInfo[classid][e_PosX] = spawn_x;
+		s_ClassSpawnInfo[classid][e_PosY] = spawn_y;
+		s_ClassSpawnInfo[classid][e_PosZ] = spawn_z;
+		s_ClassSpawnInfo[classid][e_Rot] = z_angle;
+		s_ClassSpawnInfo[classid][e_Weapon1] = weapon1;
+		s_ClassSpawnInfo[classid][e_Ammo1] = weapon1_ammo;
+		s_ClassSpawnInfo[classid][e_Weapon2] = weapon2;
+		s_ClassSpawnInfo[classid][e_Ammo2] = weapon2_ammo;
+		s_ClassSpawnInfo[classid][e_Weapon3] = weapon3;
+		s_ClassSpawnInfo[classid][e_Ammo3] = weapon3_ammo;
+
+		return 1;
+	}
+
+	return 0;
 }
 
 /*
@@ -2272,7 +2661,7 @@ public OnPlayerConnect(playerid)
 	s_LastZVelo[playerid] = 0.0;
 	s_LastZ[playerid] = 0.0;
 	s_LastUpdate[playerid] = tick;
-	s_DamageFeedTimer[playerid] = -1;
+	s_DamageFeedTimer[playerid] = 0;
 	s_DamageFeedLastUpdate[playerid] = tick;
 	s_Spectating[playerid] = INVALID_PLAYER_ID;
 	s_HealthBarVisible[playerid] = false;
@@ -2292,8 +2681,8 @@ public OnPlayerConnect(playerid)
 	s_PreviousHitI[playerid] = 0;
 	s_CbugAllowed[playerid] = s_CbugGlobal;
 	s_CbugFroze[playerid] = 0;
-	s_DeathTimer[playerid] = -1;
-	s_DelayedDeathTimer[playerid] = -1;
+	s_DeathTimer[playerid] = 0;
+	s_DelayedDeathTimer[playerid] = 0;
 	s_DamageFeedPlayer[playerid] = -1;
 	s_EnableHealthBar[playerid] = true; // enable by default
 	s_FakeHealth{playerid} = 255;
@@ -2303,6 +2692,9 @@ public OnPlayerConnect(playerid)
 	s_FakeQuat[playerid][2] = Float:0x7FFFFFFF;
 	s_FakeQuat[playerid][3] = Float:0x7FFFFFFF;
 	s_SyncDataFrozen[playerid] = false;
+	s_GogglesUsed[playerid] = 0;
+	s_RestorePlayerTeleport[playerid] = false;
+	s_BlockAdminTeleport[playerid] = false;
 
 	if (s_HealthBarForeground[playerid] != INVALID_PLAYER_TEXT_DRAW) {
 		s_InternalPlayerTextDraw[playerid][s_HealthBarForeground[playerid]] = false;
@@ -2353,25 +2745,25 @@ public OnPlayerDisconnect(playerid, reason)
 	WC_OnPlayerDisconnect(playerid, reason);
 
 	#if WC_CUSTOM_VENDING_MACHINES
-		if (s_VendingUseTimer[playerid] != -1) {
+		if (s_VendingUseTimer[playerid]) {
 			KillTimer(s_VendingUseTimer[playerid]);
-			s_VendingUseTimer[playerid] = -1;
+			s_VendingUseTimer[playerid] = 0;
 		}
 	#endif
 
-	if (s_DelayedDeathTimer[playerid] != -1) {
+	if (s_DelayedDeathTimer[playerid]) {
 		KillTimer(s_DelayedDeathTimer[playerid]);
-		s_DelayedDeathTimer[playerid] = -1;
+		s_DelayedDeathTimer[playerid] = 0;
 	}
 
-	if (s_DeathTimer[playerid] != -1) {
+	if (s_DeathTimer[playerid]) {
 		KillTimer(s_DeathTimer[playerid]);
-		s_DeathTimer[playerid] = -1;
+		s_DeathTimer[playerid] = 0;
 	}
 
-	if (s_KnifeTimeout[playerid] != -1) {
+	if (s_KnifeTimeout[playerid]) {
 		KillTimer(s_KnifeTimeout[playerid]);
-		s_KnifeTimeout[playerid] = -1;
+		s_KnifeTimeout[playerid] = 0;
 	}
 
 	if (s_HealthBarForeground[playerid] != INVALID_PLAYER_TEXT_DRAW) {
@@ -2389,9 +2781,9 @@ public OnPlayerDisconnect(playerid, reason)
 		s_DamageFeedTaken[playerid] = INVALID_PLAYER_TEXT_DRAW;
 	}
 
-	if (s_DamageFeedTimer[playerid] != -1) {
+	if (s_DamageFeedTimer[playerid]) {
 		KillTimer(s_DamageFeedTimer[playerid]);
-		s_DamageFeedTimer[playerid] = -1;
+		s_DamageFeedTimer[playerid] = 0;
 	}
 
 	SetHealthBarVisible(playerid, false);
@@ -2510,13 +2902,18 @@ public OnPlayerSpawn(playerid)
 		GetPlayerFacingAngle(playerid, s_PlayerFallbackSpawnInfo[playerid][e_Rot]);
 	}
 
-	if (s_DeathTimer[playerid] != -1) {
+	if (s_DeathTimer[playerid]) {
 		KillTimer(s_DeathTimer[playerid]);
-		s_DeathTimer[playerid] = -1;
+		s_DeathTimer[playerid] = 0;
 	}
 
 	if (s_IsDying[playerid]) {
 		s_IsDying[playerid] = false;
+
+		if (s_RestorePlayerTeleport[playerid]) {
+			s_RestorePlayerTeleport[playerid] = false;
+			AllowPlayerTeleport(playerid, true);
+		}
 	}
 
 	if (s_PlayerHealth[playerid] == 0.0) {
@@ -2590,14 +2987,19 @@ public OnPlayerRequestClass(playerid, classid)
 		return 0;
 	}
 
-	if (s_DeathTimer[playerid] != -1) {
+	if (s_DeathTimer[playerid]) {
 		KillTimer(s_DeathTimer[playerid]);
-		s_DeathTimer[playerid] = -1;
+		s_DeathTimer[playerid] = 0;
 	}
 
 	if (s_IsDying[playerid]) {
 		OnPlayerDeathFinished(playerid, false);
 		s_IsDying[playerid] = false;
+
+		if (s_RestorePlayerTeleport[playerid]) {
+			s_RestorePlayerTeleport[playerid] = false;
+			AllowPlayerTeleport(playerid, true);
+		}
 	}
 
 	if (s_TrueDeath[playerid]) {
@@ -2634,15 +3036,15 @@ public OnPlayerRequestClass(playerid, classid)
 	}
 }
 
-public OnPlayerDeath(playerid, killerid, reason)
+public OnPlayerDeath(playerid, killerid, WEAPON:reason)
 {
 	s_TrueDeath[playerid] = true;
 	s_InClassSelection[playerid] = false;
 
 	#if WC_CUSTOM_VENDING_MACHINES
-		if (s_VendingUseTimer[playerid] != -1) {
+		if (s_VendingUseTimer[playerid]) {
 			KillTimer(s_VendingUseTimer[playerid]);
-			s_VendingUseTimer[playerid] = -1;
+			s_VendingUseTimer[playerid] = 0;
 		}
 	#endif
 
@@ -2657,9 +3059,9 @@ public OnPlayerDeath(playerid, killerid, reason)
 
 	DebugMessageRedAll("OnPlayerDeath(%d died by %d from %d)", playerid, reason, killerid);
 
-	if (s_DeathTimer[playerid] != -1) {
+	if (s_DeathTimer[playerid]) {
 		KillTimer(s_DeathTimer[playerid]);
-		s_DeathTimer[playerid] = -1;
+		s_DeathTimer[playerid] = 0;
 	}
 
 	if (s_IsDying[playerid]) {
@@ -2668,7 +3070,7 @@ public OnPlayerDeath(playerid, killerid, reason)
 		return 1;
 	}
 
-	if (reason < _:WEAPON_UNARMED || reason > _:WEAPON_UNKNOWN) {
+	if (reason < WEAPON_UNARMED || reason > WEAPON_UNKNOWN) {
 		reason = WEAPON_UNKNOWN;
 	}
 
@@ -2687,12 +3089,12 @@ public OnPlayerDeath(playerid, killerid, reason)
 	new Float:amount = 0.0;
 	new bodypart = BODY_PART_UNKNOWN;
 
-	if (reason == _:WEAPON_PARACHUTE) {
+	if (reason == WEAPON_PARACHUTE) {
 		reason = WEAPON_COLLISION;
 	}
 
 	if (OnPlayerDamage(playerid, amount, killerid, reason, bodypart)) {
-		if (reason < _:WEAPON_UNARMED || reason > _:WEAPON_UNKNOWN) {
+		if (reason < WEAPON_UNARMED || reason > WEAPON_UNKNOWN) {
 			reason = WEAPON_UNKNOWN;
 		}
 
@@ -2700,7 +3102,7 @@ public OnPlayerDeath(playerid, killerid, reason)
 			amount = s_PlayerHealth[playerid] + s_PlayerArmour[playerid];
 		}
 
-		if (reason == _:WEAPON_COLLISION || reason == _:WEAPON_DROWN || reason == _:WEAPON_CARPARK) {
+		if (reason == WEAPON_COLLISION || reason == WEAPON_DROWN || reason == WEAPON_CARPARK) {
 			if (amount <= 0.0) {
 				amount = s_PlayerHealth[playerid];
 			}
@@ -2739,6 +3141,11 @@ public OnPlayerDeath(playerid, killerid, reason)
 
 		s_LastDeathTick[playerid] = GetTickCount();
 
+		if (IsPlayerTeleportAllowed(playerid)) {
+			s_RestorePlayerTeleport[playerid] = true;
+			AllowPlayerTeleport(playerid, false);
+		}
+
 		new animlib[32], animname[32], anim_lock, respawn_time;
 
 		OnPlayerPrepareDeath(playerid, animlib, animname, anim_lock, respawn_time);
@@ -2761,7 +3168,7 @@ public OnPlayerDeath(playerid, killerid, reason)
 			}
 
 			s_DeathSkip[playerid] = 2;
-			
+
 			new WEAPON:w, a;
 			GetPlayerWeaponData(playerid, WEAPON_SLOT_UNARMED, w, a);
 
@@ -2842,21 +3249,26 @@ public OnPlayerKeyStateChange(playerid, KEY:newkeys, KEY:oldkeys)
 							armour = WC_GetPlayerArmour(i);
 
 							if (s_IsDying[i]) {
-								if (s_DelayedDeathTimer[i] == -1) {
+								if (!s_DelayedDeathTimer[i]) {
 									continue;
 								}
 
 								KillTimer(s_DelayedDeathTimer[i]);
-								s_DelayedDeathTimer[i] = -1;
+								s_DelayedDeathTimer[i] = 0;
 								ClearAnimations(i, SYNC_ALL);
 								SetFakeFacingAngle(i, _);
 								FreezeSyncPacket(i, .toggle = false);
 
 								s_IsDying[i] = false;
 
-								if (s_DeathTimer[i] != -1) {
+								if (s_RestorePlayerTeleport[i]) {
+									s_RestorePlayerTeleport[i] = false;
+									AllowPlayerTeleport(i, true);
+								}
+
+								if (s_DeathTimer[i]) {
 									KillTimer(s_DeathTimer[i]);
-									s_DeathTimer[i] = -1;
+									s_DeathTimer[i] = 0;
 								}
 							}
 
@@ -2876,7 +3288,7 @@ public OnPlayerKeyStateChange(playerid, KEY:newkeys, KEY:oldkeys)
 			if (s_CustomVendingMachines
 			 && newkeys == KEY_SECONDARY_ATTACK
 			 && !oldkeys
-			 && s_VendingUseTimer[playerid] == -1
+			 && !s_VendingUseTimer[playerid]
 			 && GetPlayerAnimationIndex(playerid) != 1660) {
 				new bool:failed = false;
 
@@ -2951,9 +3363,9 @@ public OnPlayerStreamIn(playerid, forplayerid)
 public OnPlayerEnterVehicle(playerid, vehicleid, ispassenger)
 {
 	#if WC_CUSTOM_VENDING_MACHINES
-		if (s_VendingUseTimer[playerid] != -1) {
+		if (s_VendingUseTimer[playerid]) {
 			KillTimer(s_VendingUseTimer[playerid]);
-			s_VendingUseTimer[playerid] = -1;
+			s_VendingUseTimer[playerid] = 0;
 		}
 	#endif
 
@@ -2982,9 +3394,9 @@ public OnPlayerStateChange(playerid, PLAYER_STATE:newstate, PLAYER_STATE:oldstat
 	}
 
 	#if WC_CUSTOM_VENDING_MACHINES
-		if (s_VendingUseTimer[playerid] != -1) {
+		if (s_VendingUseTimer[playerid]) {
 			KillTimer(s_VendingUseTimer[playerid]);
-			s_VendingUseTimer[playerid] = -1;
+			s_VendingUseTimer[playerid] = 0;
 		}
 	#endif
 
@@ -3161,9 +3573,9 @@ public OnPlayerUpdate(playerid)
 	return WC_OnPlayerUpdate(playerid);
 }
 
-public OnPlayerGiveDamage(playerid, damagedid, Float:amount, weaponid, bodypart)
+public OnPlayerGiveDamage(playerid, damagedid, Float:amount, WEAPON:weaponid, bodypart)
 {
-	if (!IsHighRateWeapon(WEAPON:weaponid)) {
+	if (!IsHighRateWeapon(weaponid)) {
 		DebugMessage(playerid, "OnPlayerGiveDamage(%d gave %f to %d using %d on bodypart %d)", playerid, amount, damagedid, weaponid, bodypart);
 	}
 
@@ -3171,25 +3583,25 @@ public OnPlayerGiveDamage(playerid, damagedid, Float:amount, weaponid, bodypart)
 	if (!IsPlayerConnected(damagedid)) {
 		OnInvalidWeaponDamage(playerid, damagedid, amount, weaponid, bodypart, WC_NO_DAMAGED, true);
 
-		AddRejectedHit(playerid, damagedid, HIT_NO_DAMAGEDID, WEAPON:weaponid);
+		AddRejectedHit(playerid, damagedid, HIT_NO_DAMAGEDID, weaponid);
 
 		return 0;
 	}
 
 	if (s_IsDying[damagedid]) {
-		AddRejectedHit(playerid, damagedid, HIT_DYING_PLAYER, WEAPON:weaponid);
+		AddRejectedHit(playerid, damagedid, HIT_DYING_PLAYER, weaponid);
 		return 0;
 	}
 
 	if (!s_LagCompMode) {
 		new npc = IsPlayerNPC(damagedid);
 
-		if (weaponid == _:WEAPON_KNIFE && _:amount == _:0.0) {
+		if (weaponid == WEAPON_KNIFE && _:amount == _:0.0) {
 			if (damagedid == playerid) {
 				return 0;
 			}
 
-			if (s_KnifeTimeout[damagedid] != -1) {
+			if (s_KnifeTimeout[damagedid]) {
 				KillTimer(s_KnifeTimeout[damagedid]);
 			}
 
@@ -3202,11 +3614,11 @@ public OnPlayerGiveDamage(playerid, damagedid, Float:amount, weaponid, bodypart)
 	}
 
 	// Ignore unreliable and invalid damage
-	if (weaponid < _:WEAPON_UNARMED || weaponid >= sizeof(s_ValidDamageGiven) || !s_ValidDamageGiven[weaponid]) {
+	if (weaponid < WEAPON_UNARMED || _:weaponid >= sizeof(s_ValidDamageGiven) || !s_ValidDamageGiven[weaponid]) {
 		// Fire is synced as taken damage (because it's not reliable as given), so no need to show a rejected hit.
 		// Vehicle damage is also synced as taken, so no need to show that either.
-		if (weaponid != _:WEAPON_FLAMETHROWER && weaponid != _:WEAPON_VEHICLE) {
-			AddRejectedHit(playerid, damagedid, HIT_INVALID_WEAPON, WEAPON:weaponid);
+		if (weaponid != WEAPON_FLAMETHROWER && weaponid != WEAPON_VEHICLE) {
+			AddRejectedHit(playerid, damagedid, HIT_INVALID_WEAPON, weaponid);
 		}
 
 		return 0;
@@ -3217,8 +3629,8 @@ public OnPlayerGiveDamage(playerid, damagedid, Float:amount, weaponid, bodypart)
 
 	if (!WC_IsPlayerSpawned(playerid) && tick - s_LastDeathTick[playerid] > 80) {
 		// Make sure the rejected hit wasn't added in OnPlayerWeaponShot
-		if (!IsBulletWeapon(WEAPON:weaponid) || s_LastShot[playerid][e_Valid]) {
-			AddRejectedHit(playerid, damagedid, HIT_NOT_SPAWNED, WEAPON:weaponid);
+		if (!IsBulletWeapon(weaponid) || s_LastShot[playerid][e_Valid]) {
+			AddRejectedHit(playerid, damagedid, HIT_NOT_SPAWNED, weaponid);
 		}
 
 		return 0;
@@ -3231,7 +3643,7 @@ public OnPlayerGiveDamage(playerid, damagedid, Float:amount, weaponid, bodypart)
 		return 0;
 	}
 
-	if (weaponid == _:WEAPON_KNIFE) {
+	if (weaponid == WEAPON_KNIFE) {
 		if (_:amount == _:0.0) {
 			new WEAPON:w, a;
 			GetPlayerWeaponData(playerid, WEAPON_SLOT_UNARMED, w, a);
@@ -3242,7 +3654,7 @@ public OnPlayerGiveDamage(playerid, damagedid, Float:amount, weaponid, bodypart)
 
 			// Resync without bothering the player being knifed
 			if (npc || HasSameTeam(playerid, damagedid)) {
-				if (s_KnifeTimeout[damagedid] != -1) {
+				if (s_KnifeTimeout[damagedid]) {
 					KillTimer(s_KnifeTimeout[damagedid]);
 				}
 
@@ -3256,7 +3668,7 @@ public OnPlayerGiveDamage(playerid, damagedid, Float:amount, weaponid, bodypart)
 				GetPlayerPos(playerid, x, y, z);
 
 				if (GetPlayerDistanceFromPoint(damagedid, x, y, z) > s_WeaponRange[weaponid] + 2.0) {
-					if (s_KnifeTimeout[damagedid] != -1) {
+					if (s_KnifeTimeout[damagedid]) {
 						KillTimer(s_KnifeTimeout[damagedid]);
 					}
 
@@ -3269,7 +3681,7 @@ public OnPlayerGiveDamage(playerid, damagedid, Float:amount, weaponid, bodypart)
 			}
 
 			if (!OnPlayerDamage(damagedid, amount, playerid, weaponid, bodypart)) {
-				if (s_KnifeTimeout[damagedid] != -1) {
+				if (s_KnifeTimeout[damagedid]) {
 					KillTimer(s_KnifeTimeout[damagedid]);
 				}
 
@@ -3321,21 +3733,21 @@ public OnPlayerGiveDamage(playerid, damagedid, Float:amount, weaponid, bodypart)
 	}
 
 	if (HasSameTeam(playerid, damagedid)) {
-		AddRejectedHit(playerid, damagedid, HIT_SAME_TEAM, WEAPON:weaponid);
+		AddRejectedHit(playerid, damagedid, HIT_SAME_TEAM, weaponid);
 		return 0;
 	}
 
 	// Both players should see eachother
 	if ((!IsPlayerStreamedIn(playerid, damagedid) && !WC_IsPlayerPaused(damagedid)) || !IsPlayerStreamedIn(damagedid, playerid)) {
-		AddRejectedHit(playerid, damagedid, HIT_UNSTREAMED, WEAPON:weaponid, damagedid);
+		AddRejectedHit(playerid, damagedid, HIT_UNSTREAMED, weaponid, damagedid);
 		return 0;
 	}
 
 	new Float:bullets, err;
 
-	if ((err = ProcessDamage(damagedid, playerid, amount, WEAPON:weaponid, bodypart, bullets))) {
+	if ((err = ProcessDamage(damagedid, playerid, amount, weaponid, bodypart, bullets))) {
 		if (err == WC_INVALID_DAMAGE) {
-			AddRejectedHit(playerid, damagedid, HIT_INVALID_DAMAGE, WEAPON:weaponid, _:amount);
+			AddRejectedHit(playerid, damagedid, HIT_INVALID_DAMAGE, weaponid, _:amount);
 		}
 
 		if (err != WC_INVALID_DISTANCE) {
@@ -3380,33 +3792,44 @@ public OnPlayerGiveDamage(playerid, damagedid, Float:amount, weaponid, bodypart)
 	if (avg_rate != -1) {
 		if (multiple_weapons) {
 			if (avg_rate < 100) {
-				AddRejectedHit(playerid, damagedid, HIT_RATE_TOO_FAST_MULTIPLE, WEAPON:weaponid, avg_rate, s_MaxHitRateSamples);
+				AddRejectedHit(playerid, damagedid, HIT_RATE_TOO_FAST_MULTIPLE, weaponid, avg_rate, s_MaxHitRateSamples);
 				return 0;
 			}
 		} else if (s_MaxWeaponShootRate[weaponid] - avg_rate > 20) {
-			AddRejectedHit(playerid, damagedid, HIT_RATE_TOO_FAST, WEAPON:weaponid, avg_rate, s_MaxHitRateSamples, s_MaxWeaponShootRate[weaponid]);
+			AddRejectedHit(playerid, damagedid, HIT_RATE_TOO_FAST, weaponid, avg_rate, s_MaxHitRateSamples, s_MaxWeaponShootRate[weaponid]);
 			return 0;
 		}
 	}
 
-	if (IsBulletWeapon(WEAPON:weaponid) && _:amount != _:2.6400001049041748046875 && GetPlayerState(playerid) != PLAYER_STATE_DRIVER) {
-		new valid = true;
+	new valid = true;
 
+	if (GetPlayerState(playerid) == PLAYER_STATE_DRIVER) {
+		if (WEAPON_UZI <= weaponid <= WEAPON_MP5 || weaponid == WEAPON_TEC9) {
+			new KEY:keys, ud, lr;
+			GetPlayerKeys(playerid, keys, ud, lr);
+
+			// It is only possible to shoot if you look right or left from car
+			valid = (keys & KEY_LOOK_RIGHT) || (keys & KEY_LOOK_LEFT);
+		} else {
+			// Damage from something unusable from the driver's seat
+			valid = false;
+		}
+	} else if (IsBulletWeapon(weaponid) && _:amount != _:2.6400001049041748046875) {
 		if (!s_LastShot[playerid][e_Valid]) {
 			valid = false;
-			//AddRejectedHit(playerid, damagedid, HIT_LAST_SHOT_INVALID, WEAPON:weaponid);
+			//AddRejectedHit(playerid, damagedid, HIT_LAST_SHOT_INVALID, weaponid);
 			DebugMessageRed(playerid, "last shot not valid");
-		} else if (_:WEAPON_SHOTGUN <= weaponid <= _:WEAPON_SHOTGSPA) {
+		} else if (WEAPON_SHOTGUN <= weaponid <= WEAPON_SHOTGSPA) {
 			// Let's assume someone won't hit 2 players with 1 shotgun shot, and that one OnPlayerWeaponShot can be out of sync
 			if (s_LastShot[playerid][e_Hits] >= 2) {
 				valid = false;
-				AddRejectedHit(playerid, damagedid, HIT_MULTIPLE_PLAYERS_SHOTGUN, WEAPON:weaponid, s_LastShot[playerid][e_Hits] + 1);
+				AddRejectedHit(playerid, damagedid, HIT_MULTIPLE_PLAYERS_SHOTGUN, weaponid, s_LastShot[playerid][e_Hits] + 1);
 			}
 		} else if (s_LastShot[playerid][e_Hits] > 0) {
 			// Sniper doesn't always send OnPlayerWeaponShot
-			if (s_LastShot[playerid][e_Hits] >= 3 && weaponid != _:WEAPON_SNIPER) {
+			if (s_LastShot[playerid][e_Hits] >= 3 && weaponid != WEAPON_SNIPER) {
 				valid = false;
-				AddRejectedHit(playerid, damagedid, HIT_MULTIPLE_PLAYERS, WEAPON:weaponid, s_LastShot[playerid][e_Hits] + 1);
+				AddRejectedHit(playerid, damagedid, HIT_MULTIPLE_PLAYERS, weaponid, s_LastShot[playerid][e_Hits] + 1);
 			} else {
 				DebugMessageRed(playerid, "hit %d players with 1 shot", s_LastShot[playerid][e_Hits] + 1);
 			}
@@ -3420,29 +3843,29 @@ public OnPlayerGiveDamage(playerid, damagedid, Float:amount, weaponid, bodypart)
 
 				if ((!in_veh && GetPlayerSurfingObjectID(damagedid) == INVALID_OBJECT_ID) || dist > 50.0) {
 					valid = false;
-					AddRejectedHit(playerid, damagedid, HIT_TOO_FAR_FROM_SHOT, WEAPON:weaponid, _:dist);
+					AddRejectedHit(playerid, damagedid, HIT_TOO_FAR_FROM_SHOT, weaponid, _:dist);
 				}
 			}
 		}
 
 		s_LastShot[playerid][e_Hits] += 1;
+	}
 
-		if (!valid) {
-			return 0;
-		}
+	if (!valid) {
+		return 0;
 	}
 
 	if (npc) {
 		OnPlayerDamageDone(damagedid, amount, playerid, weaponid, bodypart);
 	} else {
-		InflictDamage(damagedid, amount, playerid, WEAPON:weaponid, bodypart);
+		InflictDamage(damagedid, amount, playerid, weaponid, bodypart);
 	}
 
 	// Don't send OnPlayerGiveDamage to the rest of the script, since it should not be used
 	return 0;
 }
 
-public OnPlayerTakeDamage(playerid, issuerid, Float:amount, weaponid, bodypart)
+public OnPlayerTakeDamage(playerid, issuerid, Float:amount, WEAPON:weaponid, bodypart)
 {
 	if (IsPlayerNPC(playerid)) {
 		return 0;
@@ -3454,17 +3877,17 @@ public OnPlayerTakeDamage(playerid, issuerid, Float:amount, weaponid, bodypart)
 		return 0;
 	}
 
-	if (!IsHighRateWeapon(WEAPON:weaponid)) {
+	if (!IsHighRateWeapon(weaponid)) {
 		DebugMessage(playerid, "OnPlayerTakeDamage(%d took %f from %d by %d on bodypart %d)", playerid, amount, issuerid, weaponid, bodypart);
 	}
 
 	// Ignore unreliable and invalid damage
-	if (weaponid < _:WEAPON_UNARMED || weaponid >= sizeof(s_ValidDamageTaken) || !s_ValidDamageTaken[weaponid]) {
+	if (weaponid < WEAPON_UNARMED || _:weaponid >= sizeof(s_ValidDamageTaken) || !s_ValidDamageTaken[weaponid]) {
 		return 0;
 	}
 
 	// Carjack damage
-	if (weaponid == _:WEAPON_COLLISION && _:amount == _:0.0) {
+	if (weaponid == WEAPON_COLLISION && _:amount == _:0.0) {
 		return 0;
 	}
 
@@ -3474,7 +3897,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float:amount, weaponid, bodypart)
 	}
 
 	// Climb bug
-	if (weaponid == _:WEAPON_COLLISION) {
+	if (weaponid == WEAPON_COLLISION) {
 		if (s_CustomFallDamage) {
 			return 0;
 		}
@@ -3485,7 +3908,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float:amount, weaponid, bodypart)
 			DebugMessage(playerid, "climb bug prevented");
 			return 0;
 		}
-	} else if (weaponid == _:WEAPON_KNIFE) {
+	} else if (weaponid == WEAPON_KNIFE) {
 		// Being knifed client-side
 
 		// With the plugin, this part is never actually used (it can't happen)
@@ -3494,10 +3917,10 @@ public OnPlayerTakeDamage(playerid, issuerid, Float:amount, weaponid, bodypart)
 				return 0;
 			}
 
-			if (s_KnifeTimeout[playerid] != -1) {
+			if (s_KnifeTimeout[playerid]) {
 				KillTimer(s_KnifeTimeout[playerid]);
 
-				s_KnifeTimeout[playerid] = -1;
+				s_KnifeTimeout[playerid] = 0;
 			}
 
 			if (issuerid == INVALID_PLAYER_ID || HasSameTeam(playerid, issuerid)) {
@@ -3565,8 +3988,22 @@ public OnPlayerTakeDamage(playerid, issuerid, Float:amount, weaponid, bodypart)
 
 	// If it's lagcomp, only allow damage that's valid for both modes
 	if (s_LagCompMode && s_ValidDamageTaken[weaponid] != 2) {
-		if (issuerid != INVALID_PLAYER_ID && GetPlayerState(issuerid) == PLAYER_STATE_DRIVER && (weaponid == _:WEAPON_M4 || weaponid == _:WEAPON_MINIGUN)) {
-			weaponid = weaponid == _:WEAPON_M4 ? WEAPON_VEHICLE_M4 : WEAPON_VEHICLE_MINIGUN;
+		if (issuerid != INVALID_PLAYER_ID
+		&& (weaponid == WEAPON_M4 || weaponid == WEAPON_MINIGUN)
+		&& GetPlayerState(issuerid) == PLAYER_STATE_DRIVER) {
+			new modelid = GetVehicleModel(GetPlayerVehicleID(issuerid));
+
+			if (weaponid == WEAPON_M4) {
+				if (modelid == 447 || modelid == 464 || modelid == 476) {
+					weaponid = WEAPON_VEHICLE_M4;
+				} else {
+					return 0;
+				}
+			} else if (weaponid == WEAPON_MINIGUN && modelid == 425) {
+				weaponid = WEAPON_VEHICLE_MINIGUN;
+			} else {
+				return 0;
+			}
 		} else {
 			return 0;
 		}
@@ -3578,7 +4015,7 @@ public OnPlayerTakeDamage(playerid, issuerid, Float:amount, weaponid, bodypart)
 			return 0;
 		}
 
-		if (s_IsDying[issuerid] && (IsBulletWeapon(WEAPON:weaponid) || IsMeleeWeapon(WEAPON:weaponid)) && GetTickCount() - s_LastDeathTick[issuerid] > 80) {
+		if (s_IsDying[issuerid] && (IsBulletWeapon(weaponid) || IsMeleeWeapon(weaponid)) && GetTickCount() - s_LastDeathTick[issuerid] > 80) {
 			DebugMessageRed(playerid, "shot/punched by dead player (%d)", issuerid);
 			return 0;
 		}
@@ -3588,14 +4025,14 @@ public OnPlayerTakeDamage(playerid, issuerid, Float:amount, weaponid, bodypart)
 		}
 
 		// https://github.com/oscar-broman/samp-weapon-config/issues/104
-		if (weaponid == _:WEAPON_COLLISION
-		|| weaponid == _:WEAPON_DROWN) {
+		if (weaponid == WEAPON_COLLISION
+		|| weaponid == WEAPON_DROWN) {
 			return 0;
 		}
 
 		// https://github.com/oscar-broman/samp-weapon-config/issues/104
-		if (weaponid == _:WEAPON_VEHICLE
-		|| weaponid == _:WEAPON_HELIBLADES) {
+		if (weaponid == WEAPON_VEHICLE
+		|| weaponid == WEAPON_HELIBLADES) {
 			if (GetPlayerState(issuerid) != PLAYER_STATE_DRIVER) {
 				return 0;
 			}
@@ -3611,9 +4048,9 @@ public OnPlayerTakeDamage(playerid, issuerid, Float:amount, weaponid, bodypart)
 
 	new Float:bullets = 0.0, err;
 
-	if ((err = ProcessDamage(playerid, issuerid, amount, WEAPON:weaponid, bodypart, bullets))) {
+	if ((err = ProcessDamage(playerid, issuerid, amount, weaponid, bodypart, bullets))) {
 		if (err == WC_INVALID_DAMAGE) {
-			AddRejectedHit(issuerid, playerid, HIT_INVALID_DAMAGE, WEAPON:weaponid, _:amount);
+			AddRejectedHit(issuerid, playerid, HIT_INVALID_DAMAGE, weaponid, _:amount);
 		}
 
 		if (err != WC_INVALID_DISTANCE) {
@@ -3623,28 +4060,28 @@ public OnPlayerTakeDamage(playerid, issuerid, Float:amount, weaponid, bodypart)
 		return 0;
 	}
 
-	if (IsBulletWeapon(WEAPON:weaponid)) {
+	if (IsBulletWeapon(weaponid)) {
 		new Float:x, Float:y, Float:z, Float:dist;
 		GetPlayerPos(issuerid, x, y, z);
 		dist = GetPlayerDistanceFromPoint(playerid, x, y, z);
 
 		if (dist > s_WeaponRange[weaponid] + 2.0) {
-			AddRejectedHit(issuerid, playerid, HIT_OUT_OF_RANGE, WEAPON:weaponid, _:dist, _:s_WeaponRange[weaponid]);
+			AddRejectedHit(issuerid, playerid, HIT_OUT_OF_RANGE, weaponid, _:dist, _:s_WeaponRange[weaponid]);
 			return 0;
 		}
 	}
 
-	InflictDamage(playerid, amount, issuerid, WEAPON:weaponid, bodypart);
+	InflictDamage(playerid, amount, issuerid, weaponid, bodypart);
 
 	return 0;
 }
 
-public OnPlayerWeaponShot(playerid, weaponid, BULLET_HIT_TYPE:hittype, hitid, Float:fX, Float:fY, Float:fZ)
+public OnPlayerWeaponShot(playerid, WEAPON:weaponid, BULLET_HIT_TYPE:hittype, hitid, Float:fX, Float:fY, Float:fZ)
 {
 	#if WC_CUSTOM_VENDING_MACHINES
-		if (s_VendingUseTimer[playerid] != -1) {
+		if (s_VendingUseTimer[playerid]) {
 			KillTimer(s_VendingUseTimer[playerid]);
-			s_VendingUseTimer[playerid] = -1;
+			s_VendingUseTimer[playerid] = 0;
 		}
 	#endif
 
@@ -3663,7 +4100,7 @@ public OnPlayerWeaponShot(playerid, weaponid, BULLET_HIT_TYPE:hittype, hitid, Fl
 
 	if (hittype == BULLET_HIT_TYPE_PLAYER && hitid != INVALID_PLAYER_ID) {
 		if (!IsPlayerConnected(hitid)) {
-			AddRejectedHit(playerid, hitid, HIT_DISCONNECTED, WEAPON:weaponid, hitid);
+			AddRejectedHit(playerid, hitid, HIT_DISCONNECTED, weaponid, hitid);
 
 			return 0;
 		}
@@ -3672,7 +4109,7 @@ public OnPlayerWeaponShot(playerid, weaponid, BULLET_HIT_TYPE:hittype, hitid, Fl
 	}
 
 	if (hittype < BULLET_HIT_TYPE_NONE || hittype > BULLET_HIT_TYPE_PLAYER_OBJECT) {
-		AddRejectedHit(playerid, damagedid, HIT_INVALID_HITTYPE, WEAPON:weaponid, hittype);
+		AddRejectedHit(playerid, damagedid, HIT_INVALID_HITTYPE, weaponid, hittype);
 
 		return 0;
 	}
@@ -3688,19 +4125,19 @@ public OnPlayerWeaponShot(playerid, weaponid, BULLET_HIT_TYPE:hittype, hitid, Fl
 	#endif
 
 	if (s_BeingResynced[playerid]) {
-		AddRejectedHit(playerid, damagedid, HIT_BEING_RESYNCED, WEAPON:weaponid);
+		AddRejectedHit(playerid, damagedid, HIT_BEING_RESYNCED, weaponid);
 
 		return 0;
 	}
 
 	if (!WC_IsPlayerSpawned(playerid) && tick - s_LastDeathTick[playerid] > 80) {
-		AddRejectedHit(playerid, damagedid, HIT_NOT_SPAWNED, WEAPON:weaponid);
+		AddRejectedHit(playerid, damagedid, HIT_NOT_SPAWNED, weaponid);
 
 		return 0;
 	}
 
-	if (!IsBulletWeapon(WEAPON:weaponid)) {
-		AddRejectedHit(playerid, damagedid, HIT_INVALID_WEAPON, WEAPON:weaponid);
+	if (!IsBulletWeapon(weaponid)) {
+		AddRejectedHit(playerid, damagedid, HIT_INVALID_WEAPON, weaponid);
 
 		return 0;
 	}
@@ -3718,7 +4155,7 @@ public OnPlayerWeaponShot(playerid, weaponid, BULLET_HIT_TYPE:hittype, hitid, Fl
 		new in_veh = IsPlayerInAnyVehicle(playerid) || GetPlayerSurfingVehicleID(playerid) != INVALID_VEHICLE_ID;
 
 		if ((!in_veh && GetPlayerSurfingObjectID(playerid) == INVALID_OBJECT_ID) || origin_dist > 50.0) {
-			AddRejectedHit(playerid, damagedid, HIT_TOO_FAR_FROM_ORIGIN, WEAPON:weaponid, _:origin_dist);
+			AddRejectedHit(playerid, damagedid, HIT_TOO_FAR_FROM_ORIGIN, weaponid, _:origin_dist);
 
 			return 0;
 		}
@@ -3728,7 +4165,7 @@ public OnPlayerWeaponShot(playerid, weaponid, BULLET_HIT_TYPE:hittype, hitid, Fl
 	if (hittype != BULLET_HIT_TYPE_NONE) {
 		if (length > s_WeaponRange[weaponid]) {
 			if (hittype == BULLET_HIT_TYPE_PLAYER) {
-				AddRejectedHit(playerid, damagedid, HIT_OUT_OF_RANGE, WEAPON:weaponid, _:length, _:s_WeaponRange[weaponid]);
+				AddRejectedHit(playerid, damagedid, HIT_OUT_OF_RANGE, weaponid, _:length, _:s_WeaponRange[weaponid]);
 			}
 
 			return 0;
@@ -3736,7 +4173,7 @@ public OnPlayerWeaponShot(playerid, weaponid, BULLET_HIT_TYPE:hittype, hitid, Fl
 
 		if (hittype == BULLET_HIT_TYPE_PLAYER) {
 			if (IsPlayerInAnyVehicle(playerid) && GetPlayerVehicleID(playerid) == GetPlayerVehicleID(hitid)) {
-				AddRejectedHit(playerid, damagedid, HIT_SAME_VEHICLE, WEAPON:weaponid);
+				AddRejectedHit(playerid, damagedid, HIT_SAME_VEHICLE, weaponid);
 				return 0;
 			}
 
@@ -3745,7 +4182,7 @@ public OnPlayerWeaponShot(playerid, weaponid, BULLET_HIT_TYPE:hittype, hitid, Fl
 
 			if (dist > 20.0) {
 				if ((!in_veh && GetPlayerSurfingObjectID(hitid) == INVALID_OBJECT_ID) || dist > 50.0) {
-					AddRejectedHit(playerid, damagedid, HIT_TOO_FAR_FROM_SHOT, WEAPON:weaponid, _:dist);
+					AddRejectedHit(playerid, damagedid, HIT_TOO_FAR_FROM_SHOT, weaponid, _:dist);
 
 					return 0;
 				}
@@ -3804,11 +4241,11 @@ public OnPlayerWeaponShot(playerid, weaponid, BULLET_HIT_TYPE:hittype, hitid, Fl
 	if (avg_rate != -1) {
 		if (multiple_weapons) {
 			if (avg_rate < 100) {
-				AddRejectedHit(playerid, damagedid, SHOOTING_RATE_TOO_FAST_MULTIPLE, WEAPON:weaponid, avg_rate, s_MaxShootRateSamples);
+				AddRejectedHit(playerid, damagedid, SHOOTING_RATE_TOO_FAST_MULTIPLE, weaponid, avg_rate, s_MaxShootRateSamples);
 				return 0;
 			}
 		} else if (s_MaxWeaponShootRate[weaponid] - avg_rate > 20) {
-			AddRejectedHit(playerid, damagedid, SHOOTING_RATE_TOO_FAST, WEAPON:weaponid, avg_rate, s_MaxShootRateSamples, s_MaxWeaponShootRate[weaponid]);
+			AddRejectedHit(playerid, damagedid, SHOOTING_RATE_TOO_FAST, weaponid, avg_rate, s_MaxShootRateSamples, s_MaxWeaponShootRate[weaponid]);
 			return 0;
 		}
 	}
@@ -3816,7 +4253,12 @@ public OnPlayerWeaponShot(playerid, weaponid, BULLET_HIT_TYPE:hittype, hitid, Fl
 	// Destroy vehicles with passengers in them
 	if (hittype == BULLET_HIT_TYPE_VEHICLE) {
 		if (hitid < 0 || hitid > MAX_VEHICLES || !IsValidVehicle(hitid)) {
-			AddRejectedHit(playerid, damagedid, HIT_INVALID_VEHICLE, WEAPON:weaponid, hitid);
+			AddRejectedHit(playerid, damagedid, HIT_INVALID_VEHICLE, weaponid, hitid);
+			return 0;
+		}
+
+		if (!IsVehicleStreamedIn(hitid, playerid)) {
+			AddRejectedHit(playerid, damagedid, HIT_UNSTREAMED, weaponid, hitid);
 			return 0;
 		}
 
@@ -3824,7 +4266,7 @@ public OnPlayerWeaponShot(playerid, weaponid, BULLET_HIT_TYPE:hittype, hitid, Fl
 
 		// Shouldn't be possible to damage the vehicle you're in
 		if (hitid == vehicleid) {
-			AddRejectedHit(playerid, damagedid, HIT_OWN_VEHICLE, WEAPON:weaponid);
+			AddRejectedHit(playerid, damagedid, HIT_OWN_VEHICLE, weaponid);
 			return 0;
 		}
 
@@ -3860,7 +4302,7 @@ public OnPlayerWeaponShot(playerid, weaponid, BULLET_HIT_TYPE:hittype, hitid, Fl
 
 				GetVehicleHealth(hitid, health);
 
-				if (_:WEAPON_SHOTGUN <= weaponid <= _:WEAPON_SHOTGSPA) {
+				if (WEAPON_SHOTGUN <= weaponid <= WEAPON_SHOTGSPA) {
 					health -= 120.0;
 				} else {
 					health -= s_WeaponDamage[weaponid] * 3.0;
@@ -3898,14 +4340,14 @@ public OnPlayerWeaponShot(playerid, weaponid, BULLET_HIT_TYPE:hittype, hitid, Fl
 
 				GetVehicleHealth(hitid, health);
 				if (health >= 250.0) { // vehicles start on fire below 250 hp
-					if (_:WEAPON_SHOTGUN <= weaponid <= _:WEAPON_SHOTGSPA) {
+					if (WEAPON_SHOTGUN <= weaponid <= WEAPON_SHOTGSPA) {
 						health -= 120.0;
 					} else {
 						health -= s_WeaponDamage[weaponid] * 3.0;
 					}
 
 					if (health < 250.0) {
-						if (s_VehicleRespawnTimer[hitid] == -1) {
+						if (!s_VehicleRespawnTimer[hitid]) {
 							health = 249.0;
 							s_VehicleRespawnTimer[hitid] = SetTimerEx("WC_KillVehicle", 6000, false, "ii", hitid, playerid);
 						}
@@ -3942,15 +4384,15 @@ public WC_KillVehicle(vehicleid, killerid)
 forward WC_OnDeadVehicleSpawn(vehicleid);
 public WC_OnDeadVehicleSpawn(vehicleid)
 {
-	s_VehicleRespawnTimer[vehicleid] = -1;
+	s_VehicleRespawnTimer[vehicleid] = 0;
 	return SetVehicleToRespawn(vehicleid);
 }
 
 public OnVehicleSpawn(vehicleid)
 {
-	if (s_VehicleRespawnTimer[vehicleid] != -1) {
+	if (s_VehicleRespawnTimer[vehicleid]) {
 		KillTimer(s_VehicleRespawnTimer[vehicleid]);
-		s_VehicleRespawnTimer[vehicleid] = -1;
+		s_VehicleRespawnTimer[vehicleid] = 0;
 	}
 
 	s_VehicleAlive[vehicleid] = true;
@@ -3961,9 +4403,9 @@ public OnVehicleSpawn(vehicleid)
 
 public OnVehicleDeath(vehicleid, killerid)
 {
-	if (s_VehicleRespawnTimer[vehicleid] != -1) {
+	if (s_VehicleRespawnTimer[vehicleid]) {
 		KillTimer(s_VehicleRespawnTimer[vehicleid]);
-		s_VehicleRespawnTimer[vehicleid] = -1;
+		s_VehicleRespawnTimer[vehicleid] = 0;
 	}
 
 	if (s_VehicleAlive[vehicleid]) {
@@ -4010,6 +4452,19 @@ public OnPlayerLeaveRaceCheckpoint(playerid)
 	}
 
 	return WC_OnPlayerLeaveRaceCheckpoint(playerid);
+}
+
+public OnPlayerClickMap(playerid, Float:fX, Float:fY, Float:fZ)
+{
+	if (IsAdminTeleportAllowed() && IsPlayerAdmin(playerid) || WC_IsPlayerTeleportAllowed(playerid)) {
+		if (!s_IsDying[playerid]) {
+			s_LastStop[playerid] = GetTickCount();
+		} else {
+			s_BlockAdminTeleport[playerid] = true;
+		}
+	}
+
+	return WC_OnPlayerClickMap(playerid, fX, fY, fZ);
 }
 
 /*
@@ -4090,7 +4545,25 @@ IPacket:WC_PLAYER_SYNC(playerid, BitStream:bs)
 	}
 
 	if (onFootData[PR_weaponId] == _:WEAPON_KNIFE && !s_KnifeSync) {
+		// Remove aim key
 		onFootData[PR_keys] &= ~_:KEY_HANDBRAKE;
+	} else if (_:WEAPON_NIGHT_VISION_GOGGLES <= onFootData[PR_weaponId] <= _:WEAPON_THERMAL_GOGGLES) {
+		// Remove fire key
+		onFootData[PR_keys] &= ~_:KEY_FIRE;
+
+		// Keep preventing for some more packets
+		s_GogglesTick[playerid] = GetTickCount();
+		s_GogglesUsed[playerid] = 1;
+	} else if (s_GogglesUsed[playerid]) {
+		if (s_GogglesUsed[playerid] == 2 && GetTickCount() - s_GogglesTick[playerid] > 40) {
+			s_GogglesUsed[playerid] = 0;
+		} else {
+			// Remove fire key
+			onFootData[PR_keys] &= ~_:KEY_FIRE;
+
+			s_GogglesTick[playerid] = GetTickCount();
+			s_GogglesUsed[playerid] = 2;
+		}
 	}
 
 	BS_SetWriteOffset(bs, 8);
@@ -4166,6 +4639,17 @@ IPacket:WC_AIM_SYNC(playerid, BitStream:bs)
 	return 1;
 }
 
+// The alternative is to `SetPlayerAdmin` to `false` on death, but this doesn't seem like the "safest" solution
+ORPC:WC_RPC_SET_PLAYER_POS_FIND_Z(playerid, BitStream:bs)
+{
+	if (s_BlockAdminTeleport[playerid]) {
+		s_BlockAdminTeleport[playerid] = false;
+		return 0;
+	}
+
+	return 1;
+}
+
 /*
  * Internal functions
  */
@@ -4185,36 +4669,28 @@ static ScriptInit()
 		s_ClassSpawnInfo[i][e_Skin] = -1;
 	}
 
-	s_HealthBarBorder = TextDrawCreate(546.2, 66.4, "LD_SPAC:white");
+	s_HealthBarBorder = TextDrawCreate(546.0, 66.7, "LD_SPAC:white");
 
 	if (s_HealthBarBorder == Text:INVALID_TEXT_DRAW) {
 		printf("(wc) WARN: Unable to create healthbar border textdraw");
 	} else {
 		s_InternalTextDraw[s_HealthBarBorder] = true;
 
-		TextDrawTextSize			(s_HealthBarBorder, 61.5, 8.8);
-		TextDrawAlignment			(s_HealthBarBorder, TEXT_DRAW_ALIGN_LEFT);
-		TextDrawColour				(s_HealthBarBorder, 255);
-		TextDrawSetShadow			(s_HealthBarBorder, 0);
-		TextDrawBackgroundColour	(s_HealthBarBorder, 255);
-		TextDrawFont				(s_HealthBarBorder, TEXT_DRAW_FONT_SPRITE_DRAW);
-		TextDrawSetProportional		(s_HealthBarBorder, false);
+		TextDrawTextSize	(s_HealthBarBorder, 61.7, 8.4);
+		TextDrawColour		(s_HealthBarBorder, 255);
+		TextDrawFont		(s_HealthBarBorder, TEXT_DRAW_FONT_SPRITE_DRAW);
 	}
 
-	s_HealthBarBackground = TextDrawCreate(548.2, 68.6, "LD_SPAC:white");
+	s_HealthBarBackground = TextDrawCreate(548.0, 68.8, "LD_SPAC:white");
 
 	if (s_HealthBarBackground == Text:INVALID_TEXT_DRAW) {
 		printf("(wc) WARN: Unable to create healthbar background textdraw");
 	} else {
 		s_InternalTextDraw[s_HealthBarBackground] = true;
 
-		TextDrawTextSize			(s_HealthBarBackground, 57.6, 5.0);
-		TextDrawAlignment			(s_HealthBarBackground, TEXT_DRAW_ALIGN_LEFT);
-		TextDrawColour				(s_HealthBarBackground, WC_HEALTH_BAR_BG_COLOR);
-		TextDrawSetShadow			(s_HealthBarBackground, 0);
-		TextDrawBackgroundColour	(s_HealthBarBackground, 255);
-		TextDrawFont				(s_HealthBarBackground, TEXT_DRAW_FONT_SPRITE_DRAW);
-		TextDrawSetProportional		(s_HealthBarBackground, false);
+		TextDrawTextSize	(s_HealthBarBackground, 57.8, 4.7);
+		TextDrawColour		(s_HealthBarBackground, WC_HEALTH_BAR_BG_COLOR);
+		TextDrawFont		(s_HealthBarBackground, TEXT_DRAW_FONT_SPRITE_DRAW);
 	}
 
 	#if WC_CUSTOM_VENDING_MACHINES
@@ -4299,9 +4775,9 @@ static ScriptExit()
 	for (new playerid = 0; playerid != MAX_PLAYERS; playerid++) {
 	#endif
 		#if WC_CUSTOM_VENDING_MACHINES
-			if (s_VendingUseTimer[playerid] != -1) {
+			if (s_VendingUseTimer[playerid]) {
 				KillTimer(s_VendingUseTimer[playerid]);
-				s_VendingUseTimer[playerid] = -1;
+				s_VendingUseTimer[playerid] = 0;
 			}
 		#endif
 
@@ -4433,17 +4909,17 @@ static UpdateHealthBar(playerid, bool:force = false)
 
 				s_HealthBarForeground[playerid] = CreatePlayerTextDraw(
 					playerid,
-					548.2,
-					68.6,
+					548.0,
+					68.8,
 					"LD_SPAC:white"
 				);
 				PlayerTextDrawTextSize(playerid,
 					s_HealthBarForeground[playerid],
 					WC_Bar_Calculate(
-					57.6,
+					57.8,
 					100.0,
 					float(health)),
-					5.0
+					4.7
 				);
 
 				if (s_HealthBarForeground[playerid] == INVALID_PLAYER_TEXT_DRAW) {
@@ -4451,22 +4927,18 @@ static UpdateHealthBar(playerid, bool:force = false)
 				} else {
 					s_InternalPlayerTextDraw[playerid][s_HealthBarForeground[playerid]] = true;
 
-					PlayerTextDrawAlignment(playerid, 			s_HealthBarForeground[playerid], TEXT_DRAW_ALIGN_LEFT);
-					PlayerTextDrawColour(playerid, 				s_HealthBarForeground[playerid], WC_HEALTH_BAR_FG_COLOR);
-					PlayerTextDrawSetShadow(playerid, 			s_HealthBarForeground[playerid], 0);
-					PlayerTextDrawBackgroundColour(playerid,	s_HealthBarForeground[playerid], 255);
-					PlayerTextDrawFont(playerid, 				s_HealthBarForeground[playerid], TEXT_DRAW_FONT_SPRITE_DRAW);
-					PlayerTextDrawSetProportional(playerid, 	s_HealthBarForeground[playerid], false);
-					PlayerTextDrawShow(playerid, 				s_HealthBarForeground[playerid]);
+					PlayerTextDrawColour(playerid, 			s_HealthBarForeground[playerid], WC_HEALTH_BAR_FG_COLOR);
+					PlayerTextDrawFont(playerid, 			s_HealthBarForeground[playerid], TEXT_DRAW_FONT_SPRITE_DRAW);
+					PlayerTextDrawShow(playerid, 			s_HealthBarForeground[playerid]);
 				}
 			} else if (s_InternalPlayerTextDraw[playerid][s_HealthBarForeground[playerid]]) {
 				PlayerTextDrawTextSize(playerid,
 					s_HealthBarForeground[playerid],
 					WC_Bar_Calculate(
-					57.6,
+					57.8,
 					100.0,
 					float(health)),
-					5.0
+					4.7
 				);
 				PlayerTextDrawShow(playerid, s_HealthBarForeground[playerid]);
 			}
@@ -4633,14 +5105,14 @@ static WasPlayerInVehicle(playerid, time) {
 	{
 		for (new i = 0; i < sizeof(s_VendingMachineObject); i++) {
 			#if WC_USE_STREAMER
-				if (s_VendingMachineObject[i] != INVALID_STREAMER_ID) {
+				if (_:s_VendingMachineObject[i] != INVALID_STREAMER_ID) {
 					DestroyDynamicObject(s_VendingMachineObject[i]);
-					s_VendingMachineObject[i] = INVALID_STREAMER_ID;
+					s_VendingMachineObject[i] = STREAMER_TAG_OBJECT:INVALID_STREAMER_ID;
 				}
 			#else
-				if (s_VendingMachineObject[i] != -1) {
+				if (s_VendingMachineObject[i] != INVALID_OBJECT_ID) {
 					DestroyObject(s_VendingMachineObject[i]);
-					s_VendingMachineObject[i] = -1;
+					s_VendingMachineObject[i] = INVALID_OBJECT_ID;
 				}
 			#endif
 		}
@@ -4815,12 +5287,20 @@ static ProcessDamage(&playerid, &issuerid, &Float:amount, &WEAPON:weaponid, &bod
 		// Figure out what caused the explosion
 		if (issuerid != INVALID_PLAYER_ID) {
 			if (GetPlayerState(issuerid) == PLAYER_STATE_DRIVER) {
-				weaponid = WEAPON_VEHICLE_ROCKETLAUNCHER;
+				new modelid = GetVehicleModel(GetPlayerVehicleID(issuerid));
+
+				if (modelid == 425 || modelid == 432 || modelid == 520) {
+					weaponid = WEAPON_VEHICLE_ROCKETLAUNCHER;
+				}
 			} else if (s_LastExplosive[issuerid]) {
 				weaponid = s_LastExplosive[issuerid];
 			}
 		} else if (GetPlayerState(playerid) == PLAYER_STATE_DRIVER) {
-			weaponid = WEAPON_VEHICLE_ROCKETLAUNCHER;
+			new modelid = GetVehicleModel(GetPlayerVehicleID(playerid));
+
+			if (modelid == 425 || modelid == 432 || modelid == 520) {
+				weaponid = WEAPON_VEHICLE_ROCKETLAUNCHER;
+			}
 		}
 	}
 
@@ -5232,9 +5712,9 @@ static InflictDamage(playerid, Float:amount, issuerid = INVALID_PLAYER_ID, WEAPO
 	UpdateHealthBar(playerid);
 }
 
-forward WC_DelayedDeath(playerid, issuerid, reason);
-public WC_DelayedDeath(playerid, issuerid, reason) {
-	s_DelayedDeathTimer[playerid] = -1;
+forward WC_DelayedDeath(playerid, issuerid, WEAPON:reason);
+public WC_DelayedDeath(playerid, issuerid, WEAPON:reason) {
+	s_DelayedDeathTimer[playerid] = 0;
 
 	WC_OnPlayerDeath(playerid, issuerid, reason);
 }
@@ -5244,6 +5724,11 @@ static PlayerDeath(playerid, animlib[32], animname[32], bool:anim_lock = false, 
 	s_PlayerHealth[playerid] = 0.0;
 	s_PlayerArmour[playerid] = 0.0;
 	s_IsDying[playerid] = true;
+
+	if (IsPlayerTeleportAllowed(playerid)) {
+		s_RestorePlayerTeleport[playerid] = true;
+		AllowPlayerTeleport(playerid, false);
+	}
 
 	s_LastDeathTick[playerid] = GetTickCount();
 
@@ -5276,7 +5761,7 @@ static PlayerDeath(playerid, animlib[32], animname[32], bool:anim_lock = false, 
 		ApplyAnimation(playerid, animlib, animname, 4.1, false, anim_lock, anim_lock, anim_freeze, 0, SYNC_ALL);
 	}
 
-	if (s_DeathTimer[playerid] != -1) {
+	if (s_DeathTimer[playerid]) {
 		KillTimer(s_DeathTimer[playerid]);
 	}
 
@@ -5330,9 +5815,9 @@ public OnPlayerDeathFinished(playerid, bool:cancelable)
 		s_PlayerHealth[playerid] = s_PlayerMaxHealth[playerid];
 	}
 
-	if (s_DeathTimer[playerid] != -1) {
+	if (s_DeathTimer[playerid]) {
 		KillTimer(s_DeathTimer[playerid]);
-		s_DeathTimer[playerid] = -1;
+		s_DeathTimer[playerid] = 0;
 	}
 
 	new retval = WC_OnPlayerDeathFinished(playerid, cancelable);
@@ -5354,7 +5839,7 @@ public OnPlayerDeathFinished(playerid, bool:cancelable)
 	forward WC_VendingMachineUsed(playerid, Float:health_given);
 	public WC_VendingMachineUsed(playerid, Float:health_given)
 	{
-		s_VendingUseTimer[playerid] = -1;
+		s_VendingUseTimer[playerid] = 0;
 
 		if (GetPlayerState(playerid) == PLAYER_STATE_ONFOOT && !s_IsDying[playerid]) {
 			new Float:health = s_PlayerHealth[playerid];
@@ -5373,7 +5858,7 @@ public OnPlayerDeathFinished(playerid, bool:cancelable)
 forward WC_DamageFeedUpdate(playerid);
 public WC_DamageFeedUpdate(playerid)
 {
-	s_DamageFeedTimer[playerid] = -1;
+	s_DamageFeedTimer[playerid] = 0;
 
 	if (IsPlayerConnected(playerid) && IsDamageFeedActive(playerid)) {
 		DamageFeedUpdate(playerid, true);
@@ -5408,8 +5893,6 @@ static DamageFeedUpdate(playerid, bool:modified = false)
 
 			PlayerTextDrawLetterSize(playerid, td, 0.2, 0.9);
 			PlayerTextDrawColour(playerid, td, WC_FEED_GIVEN_COLOR);
-			PlayerTextDrawFont(playerid, td, TEXT_DRAW_FONT_1);
-			PlayerTextDrawSetShadow(playerid, td, 0);
 			PlayerTextDrawAlignment(playerid, td, TEXT_DRAW_ALIGN_CENTRE);
 			PlayerTextDrawSetOutline(playerid, td, 1);
 			PlayerTextDrawBackgroundColour(playerid, td, 0x0000001A);
@@ -5428,8 +5911,6 @@ static DamageFeedUpdate(playerid, bool:modified = false)
 
 			PlayerTextDrawLetterSize(playerid, td, 0.2, 0.9);
 			PlayerTextDrawColour(playerid, td, WC_FEED_TAKEN_COLOR);
-			PlayerTextDrawFont(playerid, td, TEXT_DRAW_FONT_1);
-			PlayerTextDrawSetShadow(playerid, td, 0);
 			PlayerTextDrawAlignment(playerid, td, TEXT_DRAW_ALIGN_CENTRE);
 			PlayerTextDrawSetOutline(playerid, td, 1);
 			PlayerTextDrawBackgroundColour(playerid, td, 0x0000001A);
@@ -5482,7 +5963,7 @@ static DamageFeedUpdate(playerid, bool:modified = false)
 		}
 	}
 
-	if (s_DamageFeedTimer[playerid] != -1) {
+	if (s_DamageFeedTimer[playerid]) {
 		KillTimer(s_DamageFeedTimer[playerid]);
 	}
 
@@ -5490,7 +5971,7 @@ static DamageFeedUpdate(playerid, bool:modified = false)
 		s_DamageFeedTimer[playerid] = SetTimerEx("WC_DamageFeedUpdate", s_DamageFeedMaxUpdateRate - (tick - s_DamageFeedLastUpdate[playerid]), false, "i", playerid);
 	} else {
 		if (lowest_tick == tick + 1) {
-			s_DamageFeedTimer[playerid] = -1;
+			s_DamageFeedTimer[playerid] = 0;
 			modified = true;
 		} else {
 			s_DamageFeedTimer[playerid] = SetTimerEx("WC_DamageFeedUpdate", s_DamageFeedHideDelay - (tick - lowest_tick) + 10, false, "i", playerid);
@@ -5995,14 +6476,14 @@ public WC_PlayerDeathRespawn(playerid)
 	TogglePlayerSpectating(playerid, false);
 }
 
-public OnInvalidWeaponDamage(playerid, damagedid, Float:amount, weaponid, bodypart, error, bool:given)
+public OnInvalidWeaponDamage(playerid, damagedid, Float:amount, WEAPON:weaponid, bodypart, error, bool:given)
 {
 	DebugMessageRedAll("OnInvalidWeaponDamage(%d, %d, %f, %d, %d, %d, %d)", playerid, damagedid, amount, weaponid, bodypart, error, given);
 
 	WC_OnInvalidWeaponDamage(playerid, damagedid, Float:amount, weaponid, bodypart, error, bool:given);
 }
 
-public OnPlayerDamageDone(playerid, Float:amount, issuerid, weapon, bodypart)
+public OnPlayerDamageDone(playerid, Float:amount, issuerid, WEAPON:weapon, bodypart)
 {
 	new idx = s_PreviousHitI[playerid];
 
@@ -6021,7 +6502,7 @@ public OnPlayerDamageDone(playerid, Float:amount, issuerid, weapon, bodypart)
 	s_PreviousHits[playerid][idx][e_Health] = s_DamageDoneHealth[playerid];
 	s_PreviousHits[playerid][idx][e_Armour] = s_DamageDoneArmour[playerid];
 
-	if (!IsHighRateWeapon(WEAPON:weapon)) {
+	if (!IsHighRateWeapon(weapon)) {
 		DebugMessageAll("OnPlayerDamageDone(%d did %f to %d with %d on bodypart %d)", issuerid, amount, playerid, weapon, bodypart);
 
 		if (s_DamageTakenSound) {
@@ -6054,15 +6535,15 @@ public OnPlayerDamageDone(playerid, Float:amount, issuerid, weapon, bodypart)
 	}
 
 	if (issuerid != INVALID_PLAYER_ID) {
-		DamageFeedAddHitGiven(issuerid, playerid, amount, WEAPON:weapon);
+		DamageFeedAddHitGiven(issuerid, playerid, amount, weapon);
 	}
 
-	DamageFeedAddHitTaken(playerid, issuerid, amount, WEAPON:weapon);
+	DamageFeedAddHitTaken(playerid, issuerid, amount, weapon);
 
 	WC_OnPlayerDamageDone(playerid, amount, issuerid, weapon, bodypart);
 }
 
-public OnPlayerDamage(&playerid, &Float:amount, &issuerid, &weapon, &bodypart)
+public OnPlayerDamage(&playerid, &Float:amount, &issuerid, &WEAPON:weapon, &bodypart)
 {
 	return WC_OnPlayerDamage(playerid, amount, issuerid, weapon, bodypart);
 }
@@ -6221,7 +6702,7 @@ CHAIN_FORWARD:WC_OnPlayerRequestClass(playerid, classid) = 1;
 	#define _ALS_OnPlayerDeath
 #endif
 #define OnPlayerDeath(%0) CHAIN_PUBLIC:WC_OnPlayerDeath(%0)
-CHAIN_FORWARD:WC_OnPlayerDeath(playerid, killerid, reason) = 1;
+CHAIN_FORWARD:WC_OnPlayerDeath(playerid, killerid, WEAPON:reason) = 1;
 
 
 #if defined _ALS_OnPlayerKeyStateChange
@@ -6239,7 +6720,7 @@ CHAIN_FORWARD:WC_OnPlayerKeyStateChange(playerid, KEY:newkeys, KEY:oldkeys) = 1;
 	#define _ALS_OnPlayerWeaponShot
 #endif
 #define OnPlayerWeaponShot(%0) CHAIN_PUBLIC:WC_OnPlayerWeaponShot(%0)
-CHAIN_FORWARD:WC_OnPlayerWeaponShot(playerid, weaponid, BULLET_HIT_TYPE:hittype, hitid, Float:fX, Float:fY, Float:fZ) = 1;
+CHAIN_FORWARD:WC_OnPlayerWeaponShot(playerid, WEAPON:weaponid, BULLET_HIT_TYPE:hittype, hitid, Float:fX, Float:fY, Float:fZ) = 1;
 
 
 #if defined _ALS_OnPlayerEnterCheckpoint
@@ -6278,13 +6759,22 @@ CHAIN_FORWARD:WC_OnPlayerEnterRaceCheckpoint(playerid) = 1;
 CHAIN_FORWARD:WC_OnPlayerLeaveRaceCheckpoint(playerid) = 1;
 
 
+#if defined _ALS_OnPlayerClickMap
+	#undef OnPlayerClickMap
+#else
+	#define _ALS_OnPlayerClickMap
+#endif
+#define OnPlayerClickMap(%0) CHAIN_PUBLIC:WC_OnPlayerClickMap(%0)
+CHAIN_FORWARD:WC_OnPlayerClickMap(playerid, Float:fX, Float:fY, Float:fZ) = 1;
+
+
 #if defined _ALS_OnInvalidWeaponDamage
 	#undef OnInvalidWeaponDamage
 #else
 	#define _ALS_OnInvalidWeaponDamage
 #endif
 #define OnInvalidWeaponDamage(%0) CHAIN_PUBLIC:WC_OnInvalidWeaponDamage(%0)
-CHAIN_FORWARD:WC_OnInvalidWeaponDamage(playerid, damagedid, Float:amount, weaponid, bodypart, error, bool:given) = 1;
+CHAIN_FORWARD:WC_OnInvalidWeaponDamage(playerid, damagedid, Float:amount, WEAPON:weaponid, bodypart, error, bool:given) = 1;
 
 
 #if defined _ALS_OnPlayerDamageDone
@@ -6293,7 +6783,7 @@ CHAIN_FORWARD:WC_OnInvalidWeaponDamage(playerid, damagedid, Float:amount, weapon
 	#define _ALS_OnPlayerDamageDone
 #endif
 #define OnPlayerDamageDone(%0) CHAIN_PUBLIC:WC_OnPlayerDamageDone(%0)
-CHAIN_FORWARD:WC_OnPlayerDamageDone(playerid, Float:amount, issuerid, weapon, bodypart) = 1;
+CHAIN_FORWARD:WC_OnPlayerDamageDone(playerid, Float:amount, issuerid, WEAPON:weapon, bodypart) = 1;
 
 
 #if defined _ALS_OnPlayerDamage
@@ -6302,7 +6792,7 @@ CHAIN_FORWARD:WC_OnPlayerDamageDone(playerid, Float:amount, issuerid, weapon, bo
 	#define _ALS_OnPlayerDamage
 #endif
 #define OnPlayerDamage(%0) CHAIN_PUBLIC:WC_OnPlayerDamage(%0)
-CHAIN_FORWARD:WC_OnPlayerDamage(&playerid, &Float:amount, &issuerid, &weapon, &bodypart) = 1;
+CHAIN_FORWARD:WC_OnPlayerDamage(&playerid, &Float:amount, &issuerid, &WEAPON:weapon, &bodypart) = 1;
 
 
 #if defined _ALS_OnPlayerPrepareDeath
@@ -6762,12 +7252,12 @@ CHAIN_FORWARD:WC_OnPlayerDeathFinished(playerid, bool:cancelable) = 1;
 #define TextDrawSetPreviewRot WC_TextDrawSetPreviewRot
 
 
-#if defined _ALS_TextDrawSetPreviewVehicleColours
+#if defined _ALS_TextDrawSetPreviewVehCol
 	#undef TextDrawSetPreviewVehicleColours
 #else
-	#define _ALS_TextDrawSetPreviewVehicleColours
+	#define _ALS_TextDrawSetPreviewVehCol
 #endif
-#define TextDrawSetPreviewVehicleColours WC_TextDrawSetPreviewVehicleColours
+#define TextDrawSetPreviewVehicleColours WC_TextDrawSetPreviewVehCol
 
 
 #if defined _ALS_CreatePlayerTextDraw
@@ -6855,7 +7345,7 @@ CHAIN_FORWARD:WC_OnPlayerDeathFinished(playerid, bool:cancelable) = 1;
 #else
 	#define _ALS_PlayerTextDrawBackgroundCo
 #endif
-#define PlayerTextDrawBackgroundColour WC_PlayerTextDrawBackgroundColour
+#define PlayerTextDrawBackgroundColour WC_PlayerTextDrawBackgroundColo
 
 
 #if defined _ALS_PlayerTextDrawFont
@@ -6866,12 +7356,12 @@ CHAIN_FORWARD:WC_OnPlayerDeathFinished(playerid, bool:cancelable) = 1;
 #define PlayerTextDrawFont WC_PlayerTextDrawFont
 
 
-#if defined _ALS_PlayerTextDrawSetProportional
+#if defined _ALS_PlayerTextDrawSetProportio
 	#undef PlayerTextDrawSetProportional
 #else
-	#define _ALS_PlayerTextDrawSetProportional
+	#define _ALS_PlayerTextDrawSetProportio
 #endif
-#define PlayerTextDrawSetProportional WC_PlayerTextDrawSetProportional
+#define PlayerTextDrawSetProportional WC_PlayerTextDrawSetProportiona
 
 
 #if defined _ALS_PlayerTextDrawSetSelectabl
@@ -6911,7 +7401,7 @@ CHAIN_FORWARD:WC_OnPlayerDeathFinished(playerid, bool:cancelable) = 1;
 #else
 	#define _ALS_PlayerTextDrawSetPreviewMo
 #endif
-#define PlayerTextDrawSetPreviewModel WC_PlayerTextDrawSetPreviewModel
+#define PlayerTextDrawSetPreviewModel WC_PlayerTextDrawSetPreviewMode
 
 
 #if defined _ALS_PlayerTextDrawSetPreviewRo
@@ -6922,9 +7412,361 @@ CHAIN_FORWARD:WC_OnPlayerDeathFinished(playerid, bool:cancelable) = 1;
 #define PlayerTextDrawSetPreviewRot WC_PlayerTextDrawSetPreviewRot
 
 
-#if defined _ALS_PlayerTextDrawSetPreviewVehicleColours
+#if defined _ALS_PlayerTextDrawSetPreviewVe
 	#undef PlayerTextDrawSetPreviewVehicleColours
 #else
-	#define _ALS_PlayerTextDrawSetPreviewVehicleColours
+	#define _ALS_PlayerTextDrawSetPreviewVe
 #endif
-#define PlayerTextDrawSetPreviewVehicleColours WC_PlayerTextDrawSetPreviewVehicleColours
+#define PlayerTextDrawSetPreviewVehicleColours WC_PlayerTextDrawSetPreviewVehC
+
+
+#if defined _ALS_AllowPlayerTeleport
+	#undef AllowPlayerTeleport
+#else
+	#define _ALS_AllowPlayerTeleport
+#endif
+#define AllowPlayerTeleport WC_AllowPlayerTeleport
+
+
+#if defined _ALS_IsPlayerTeleportAllowed
+	#undef IsPlayerTeleportAllowed
+#else
+	#define _ALS_IsPlayerTeleportAllowed
+#endif
+#define IsPlayerTeleportAllowed WC_IsPlayerTeleportAllowed
+
+
+#if defined _ALS_IsValidTextDraw
+	#undef IsValidTextDraw
+#else
+	#define _ALS_IsValidTextDraw
+#endif
+#define IsValidTextDraw WC_IsValidTextDraw
+
+
+#if defined _ALS_IsTextDrawVisibleForPlayer
+	#undef IsTextDrawVisibleForPlayer
+#else
+	#define _ALS_IsTextDrawVisibleForPlayer
+#endif
+#define IsTextDrawVisibleForPlayer WC_IsTextDrawVisibleForPlayer
+
+
+#if defined _ALS_TextDrawGetString
+	#undef TextDrawGetString
+#else
+	#define _ALS_TextDrawGetString
+#endif
+#define TextDrawGetString WC_TextDrawGetString
+
+
+#if defined _ALS_TextDrawSetPos
+	#undef TextDrawSetPos
+#else
+	#define _ALS_TextDrawSetPos
+#endif
+#define TextDrawSetPos WC_TextDrawSetPos
+
+
+#if defined _ALS_TextDrawGetLetterSize
+	#undef TextDrawGetLetterSize
+#else
+	#define _ALS_TextDrawGetLetterSize
+#endif
+#define TextDrawGetLetterSize WC_TextDrawGetLetterSize
+
+
+#if defined _ALS_TextDrawGetTextSize
+	#undef TextDrawGetTextSize
+#else
+	#define _ALS_TextDrawGetTextSize
+#endif
+#define TextDrawGetTextSize WC_TextDrawGetTextSize
+
+
+#if defined _ALS_TextDrawGetPos
+	#undef TextDrawGetPos
+#else
+	#define _ALS_TextDrawGetPos
+#endif
+#define TextDrawGetPos WC_TextDrawGetPos
+
+
+#if defined _ALS_TextDrawGetColour
+	#undef TextDrawGetColour
+#else
+	#define _ALS_TextDrawGetColour
+#endif
+#define TextDrawGetColour WC_TextDrawGetColour
+
+
+#if defined _ALS_TextDrawGetBoxColour
+	#undef TextDrawGetBoxColour
+#else
+	#define _ALS_TextDrawGetBoxColour
+#endif
+#define TextDrawGetBoxColour WC_TextDrawGetBoxColour
+
+
+#if defined _ALS_TextDrawGetBackgroundColou
+	#undef TextDrawGetBackgroundColour
+#else
+	#define _ALS_TextDrawGetBackgroundColou
+#endif
+#define TextDrawGetBackgroundColour WC_TextDrawGetBackgroundColour
+
+
+#if defined _ALS_TextDrawGetShadow
+	#undef TextDrawGetShadow
+#else
+	#define _ALS_TextDrawGetShadow
+#endif
+#define TextDrawGetShadow WC_TextDrawGetShadow
+
+
+#if defined _ALS_TextDrawGetOutline
+	#undef TextDrawGetOutline
+#else
+	#define _ALS_TextDrawGetOutline
+#endif
+#define TextDrawGetOutline WC_TextDrawGetOutline
+
+
+#if defined _ALS_TextDrawGetFont
+	#undef TextDrawGetFont
+#else
+	#define _ALS_TextDrawGetFont
+#endif
+#define TextDrawGetFont WC_TextDrawGetFont
+
+
+#if defined _ALS_TextDrawIsBox
+	#undef TextDrawIsBox
+#else
+	#define _ALS_TextDrawIsBox
+#endif
+#define TextDrawIsBox WC_TextDrawIsBox
+
+
+#if defined _ALS_TextDrawIsProportional
+	#undef TextDrawIsProportional
+#else
+	#define _ALS_TextDrawIsProportional
+#endif
+#define TextDrawIsProportional WC_TextDrawIsProportional
+
+
+#if defined _ALS_TextDrawIsSelectable
+	#undef TextDrawIsSelectable
+#else
+	#define _ALS_TextDrawIsSelectable
+#endif
+#define TextDrawIsSelectable WC_TextDrawIsSelectable
+
+
+#if defined _ALS_TextDrawGetAlignment
+	#undef TextDrawGetAlignment
+#else
+	#define _ALS_TextDrawGetAlignment
+#endif
+#define TextDrawGetAlignment WC_TextDrawGetAlignment
+
+
+#if defined _ALS_TextDrawGetPreviewModel
+	#undef TextDrawGetPreviewModel
+#else
+	#define _ALS_TextDrawGetPreviewModel
+#endif
+#define TextDrawGetPreviewModel WC_TextDrawGetPreviewModel
+
+
+#if defined _ALS_TextDrawGetPreviewRot
+	#undef TextDrawGetPreviewRot
+#else
+	#define _ALS_TextDrawGetPreviewRot
+#endif
+#define TextDrawGetPreviewRot WC_TextDrawGetPreviewRot
+
+
+#if defined _ALS_TextDrawGetPreviewVehColours
+	#undef TextDrawGetPreviewVehicleColours
+#else
+	#define _ALS_TextDrawGetPreviewVehColours
+#endif
+#define TextDrawGetPreviewVehicleColours WC_TextDrawGetPreviewVehicleColours
+
+
+#if defined _ALS_TextDrawSetStringForPlayer
+	#undef TextDrawSetStringForPlayer
+#else
+	#define _ALS_TextDrawSetStringForPlayer
+#endif
+#define TextDrawSetStringForPlayer WC_TextDrawSetStringForPlayer
+
+
+#if defined _ALS_IsValidPlayerTextDraw
+	#undef IsValidPlayerTextDraw
+#else
+	#define _ALS_IsValidPlayerTextDraw
+#endif
+#define IsValidPlayerTextDraw WC_IsValidPlayerTextDraw
+
+
+#if defined _ALS_IsPlayerTextDrawVisible
+	#undef IsPlayerTextDrawVisible
+#else
+	#define _ALS_IsPlayerTextDrawVisible
+#endif
+#define IsPlayerTextDrawVisible WC_IsPlayerTextDrawVisible
+
+
+#if defined _ALS_PlayerTextDrawGetString
+	#undef PlayerTextDrawGetString
+#else
+	#define _ALS_PlayerTextDrawGetString
+#endif
+#define PlayerTextDrawGetString WC_PlayerTextDrawGetString
+
+
+#if defined _ALS_PlayerTextDrawSetPos
+	#undef PlayerTextDrawSetPos
+#else
+	#define _ALS_PlayerTextDrawSetPos
+#endif
+#define PlayerTextDrawSetPos WC_PlayerTextDrawSetPos
+
+
+#if defined _ALS_PlayerTextDrawGetLetterSiz
+	#undef PlayerTextDrawGetLetterSize
+#else
+	#define _ALS_PlayerTextDrawGetLetterSiz
+#endif
+#define PlayerTextDrawGetLetterSize WC_PlayerTextDrawGetLetterSize
+
+
+#if defined _ALS_PlayerTextDrawGetTextSize
+	#undef PlayerTextDrawGetTextSize
+#else
+	#define _ALS_PlayerTextDrawGetTextSize
+#endif
+#define PlayerTextDrawGetTextSize WC_PlayerTextDrawGetTextSize
+
+
+#if defined _ALS_PlayerTextDrawGetPos
+	#undef PlayerTextDrawGetPos
+#else
+	#define _ALS_PlayerTextDrawGetPos
+#endif
+#define PlayerTextDrawGetPos WC_PlayerTextDrawGetPos
+
+
+#if defined _ALS_PlayerTextDrawGetColour
+	#undef PlayerTextDrawGetColour
+#else
+	#define _ALS_PlayerTextDrawGetColour
+#endif
+#define PlayerTextDrawGetColour WC_PlayerTextDrawGetColour
+
+
+#if defined _ALS_PlayerTextDrawGetBoxColour
+	#undef PlayerTextDrawGetBoxColour
+#else
+	#define _ALS_PlayerTextDrawGetBoxColour
+#endif
+#define PlayerTextDrawGetBoxColour WC_PlayerTextDrawGetBoxColour
+
+
+#if defined _ALS_PlayerTextDrawGetBackgroundColour
+	#undef PlayerTextDrawGetBackgroundColour
+#else
+	#define _ALS_PlayerTextDrawGetBackgroundColour
+#endif
+#define PlayerTextDrawGetBackgroundColour WC_PlayerTextDrawGetBackgroundColour
+
+
+#if defined _ALS_PlayerTextDrawGetShadow
+	#undef PlayerTextDrawGetShadow
+#else
+	#define _ALS_PlayerTextDrawGetShadow
+#endif
+#define PlayerTextDrawGetShadow WC_PlayerTextDrawGetShadow
+
+
+#if defined _ALS_PlayerTextDrawGetOutline
+	#undef PlayerTextDrawGetOutline
+#else
+	#define _ALS_PlayerTextDrawGetOutline
+#endif
+#define PlayerTextDrawGetOutline WC_PlayerTextDrawGetOutline
+
+
+#if defined _ALS_PlayerTextDrawGetFont
+	#undef PlayerTextDrawGetFont
+#else
+	#define _ALS_PlayerTextDrawGetFont
+#endif
+#define PlayerTextDrawGetFont WC_PlayerTextDrawGetFont
+
+
+#if defined _ALS_PlayerTextDrawIsBox
+	#undef PlayerTextDrawIsBox
+#else
+	#define _ALS_PlayerTextDrawIsBox
+#endif
+#define PlayerTextDrawIsBox WC_PlayerTextDrawIsBox
+
+
+#if defined _ALS_PlayerTextDrawIsProportion
+	#undef PlayerTextDrawIsProportional
+#else
+	#define _ALS_PlayerTextDrawIsProportion
+#endif
+#define PlayerTextDrawIsProportional WC_PlayerTextDrawIsProportional
+
+
+#if defined _ALS_PlayerTextDrawIsSelectable
+	#undef PlayerTextDrawIsSelectable
+#else
+	#define _ALS_PlayerTextDrawIsSelectable
+#endif
+#define PlayerTextDrawIsSelectable WC_PlayerTextDrawIsSelectable
+
+
+#if defined _ALS_PlayerTextDrawGetAlignment
+	#undef PlayerTextDrawGetAlignment
+#else
+	#define _ALS_PlayerTextDrawGetAlignment
+#endif
+#define PlayerTextDrawGetAlignment WC_PlayerTextDrawGetAlignment
+
+
+#if defined _ALS_PlayerTextDrawGetPreviewMo
+	#undef PlayerTextDrawGetPreviewModel
+#else
+	#define _ALS_PlayerTextDrawGetPreviewMo
+#endif
+#define PlayerTextDrawGetPreviewModel WC_PlayerTextDrawGetPreviewMode
+
+
+#if defined _ALS_PlayerTextDrawGetPreviewRo
+	#undef PlayerTextDrawGetPreviewRot
+#else
+	#define _ALS_PlayerTextDrawGetPreviewRo
+#endif
+#define PlayerTextDrawGetPreviewRot WC_PlayerTextDrawGetPreviewRot
+
+
+#if defined _ALS_PlayerTextDrawGetPreviewVehicleColours
+	#undef PlayerTextDrawGetPreviewVehicleColours
+#else
+	#define _ALS_PlayerTextDrawGetPreviewVehicleColours
+#endif
+#define PlayerTextDrawGetPreviewVehicleColours WC_PlayerTextDrawGetPreviewVehicleColours
+
+
+#if defined _ALS_EditPlayerClass
+	#undef EditPlayerClass
+#else
+	#define _ALS_EditPlayerClass
+#endif
+#define EditPlayerClass WC_EditPlayerClass

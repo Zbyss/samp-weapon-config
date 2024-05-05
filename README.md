@@ -12,7 +12,7 @@ It's pretty much plug-and-play if you don't have any filterscripts that interfer
 2. Replace `OnPlayerGiveDamage` and `OnPlayerTakeDamage` with just one callback:
     
     ```pawn
-    public OnPlayerDamage(&playerid, &Float:amount, &issuerid, &weapon, &bodypart)
+    public OnPlayerDamage(&playerid, &Float:amount, &issuerid, &WEAPON:weapon, &bodypart)
     ```
 3. Add config functions in `OnGameModeInit` (or any other places, they can be called at any time).
     **Recommended**:
@@ -110,7 +110,7 @@ CallRemoteFunction("SetHealth", "if", playerid, health);
 ### New callbacks
 
 ```pawn
-public OnPlayerDamage(&playerid, &Float:amount, &issuerid, &weapon, &bodypart)
+public OnPlayerDamage(&playerid, &Float:amount, &issuerid, &WEAPON:weapon, &bodypart)
 ```
 Called when damage is about to be inflicted on a player
 Most arguments can be modified (e.g. the damage could be adjusted)
@@ -124,7 +124,7 @@ Most arguments can be modified (e.g. the damage could be adjusted)
 Return 0 to prevent the damage from being inflicted
 
 ```pawn
-public OnPlayerDamageDone(playerid, Float:amount, issuerid, weapon, bodypart)
+public OnPlayerDamageDone(playerid, Float:amount, issuerid, WEAPON:weapon, bodypart)
 ```
 Called after damage has been inflicted
 
@@ -166,7 +166,7 @@ See E_REJECTED_HIT and GetRejectedHit for more
 Return value ignored
 
 ```pawn
-public OnInvalidWeaponDamage(playerid, damagedid, Float:amount, weaponid, bodypart, error, bool:given)
+public OnInvalidWeaponDamage(playerid, damagedid, Float:amount, WEAPON:weaponid, bodypart, error, bool:given)
 ```
 When a player takes or gives invalid damage (WC_* errors above)
 * `playerid` - The player that inflicted the damage
@@ -292,7 +292,17 @@ Check if users anti-cbug is toggled. (Using no playerid param will show the glob
 ```pawn
 SetDamageFeed(bool:toggle);
 ```
-Toggle damage feed
+Toggle damage feed for all
+
+```pawn
+SetDamageFeedForPlayer(playerid, toggle = -1);
+```
+Toggle damage feed for player
+
+```pawn
+IsDamageFeedActive(playerid = -1);
+```
+Returns true if damage feed is active for player (for all, if `playerid` passed as -1)
 
 ```pawn
 SetDamageSounds(taken, given);
@@ -382,6 +392,6 @@ Set custom rules for a weapon. The defaults aren't going to comfort EVERYONE, so
 * `torso_only` - Whether this weapon will only damage armour when the 'hit' bodypart is the torso or all bodyparts. Only works when `torso_rules` are enabled using `SetCustomArmourRules`.
 
 ```pawn
-EnableHealthBarForPlayer(playerid, bool:enable)
+EnableHealthBarForPlayer(playerid, bool:enable);
 ```
 Show or hide health bar for player.
