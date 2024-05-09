@@ -1,6 +1,0 @@
-{
-  "user": "oscar-broman",
-  "repo": "samp-weapon-config",
-  "contributors": ["oscar-broman"],
-  "dependencies": ["openmultiplayer/omp-stdlib", "katursis/Pawn.RakNet:1.5.1-omp-rc2"]
-}
